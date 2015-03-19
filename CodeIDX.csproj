@@ -1,0 +1,396 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{49FEBFF2-FD99-49FD-AFE6-6AF3A1889E6F}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CodeIDX</RootNamespace>
+    <AssemblyName>CodeIDX</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <SccProjectName>Svn</SccProjectName>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccProvider>SubversionScc</SccProvider>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>C:\Users\Pawn\Desktop\CodeIDX\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>2</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Views\Resources\Images\code.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>753285716CCAC432819C77F788795FDB44A8D1A5</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>CodeIDX_TemporaryKey.pfx</ManifestKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Common.Logging.Core">
+      <HintPath>..\packages\Common.Logging.Core.2.2.0\lib\net40\Common.Logging.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="envdte80, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Hardcodet.Wpf.TaskbarNotification">
+      <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.5\lib\net45\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.AvalonEdit, Version=4.3.2.9632, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Wide.AvalonEdit.0.2\content\ICSharpCode.AvalonEdit.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="log4net">
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net">
+      <HintPath>..\packages\Lucene.Net.3.0.3\lib\NET40\Lucene.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Analyzers">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Analyzers.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Core">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.FastVectorHighlighter">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.FastVectorHighlighter.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Highlighter">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Highlighter.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Memory">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Queries">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Queries.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Regex">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Regex.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.SimpleFacetedSearch">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.SimpleFacetedSearch.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.Snowball">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.Snowball.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Contrib.SpellChecker">
+      <HintPath>..\packages\Lucene.Net.Contrib.3.0.3\lib\net40\Lucene.Net.Contrib.SpellChecker.dll</HintPath>
+    </Reference>
+    <Reference Include="Lucene.Net.Linq">
+      <HintPath>..\packages\Lucene.Net.Linq.3.3.1\lib\net40\Lucene.Net.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="Ookii.Dialogs.Wpf">
+      <HintPath>..\packages\Ookii.Dialogs.1.0\lib\net35\Ookii.Dialogs.Wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="Remotion.Linq">
+      <HintPath>..\packages\Remotion.Linq.1.13.111\lib\net35\Remotion.Linq.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="Xceed.Wpf.AvalonDock">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.AvalonDock.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.Aero">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.Aero.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.Metro">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.Metro.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.AvalonDock.Themes.VS2010">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.AvalonDock.Themes.VS2010.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.DataGrid">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.DataGrid.dll</HintPath>
+    </Reference>
+    <Reference Include="Xceed.Wpf.Toolkit">
+      <HintPath>..\packages\Extended.Wpf.Toolkit.2.2.1\lib\net40\Xceed.Wpf.Toolkit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Compile Include="MainWindowCommandHandler.cs" />
+    <Compile Include="Services\ApplicationService.cs" />
+    <Compile Include="ViewModels\WildcardHighlightInfo.cs" />
+    <Compile Include="Settings\RefreshAtStartupKind.cs" />
+    <Compile Include="Settings\CodeIDXSettingsBas.cs" />
+    <Compile Include="Settings\GeneralSettings.cs" />
+    <Compile Include="Settings\BlacklistSettings.cs" />
+    <Compile Include="Settings\UserInterfaceSettings.cs" />
+    <Compile Include="Settings\SearchSettings.cs" />
+    <Compile Include="Settings\ResultsSettings.cs" />
+    <Compile Include="ViewModels\Commands\ApplicationViewCommands.cs" />
+    <Compile Include="ViewModels\Commands\ApplicationView_CreateIndexCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchView_RunSearchCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchViewCommands.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultCommands.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_OpenFileCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_OpenFileInNotePadCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_RemoveFileFromResultsCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_FilterFileCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_CopyFilepathCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchResultsView_OpenLocationCommand.cs" />
+    <Compile Include="ViewModels\Commands\ViewModelCommand.cs" />
+    <Compile Include="ViewModels\Options\BlacklistOptionsViewModel.cs" />
+    <Compile Include="ViewModels\Options\GeneralOptionsViewModel.cs" />
+    <Compile Include="ViewModels\Options\OptionsDialogModel.cs" />
+    <Compile Include="ViewModels\Options\ResultOptionsViewModel.cs" />
+    <Compile Include="ViewModels\Options\SearchOptionsViewModel.cs" />
+    <Compile Include="ViewModels\Options\UIOptionsViewModel.cs" />
+    <Compile Include="ViewModels\Services\ApplicationViewService.cs" />
+    <Compile Include="Views\Resources\Controls\ColorizeAvalonEdit.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="Views\Resources\Controls\EditableAvalonEditor.xaml.cs">
+      <DependentUpon>EditableAvalonEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Resources\Controls\TextBlockEx.cs" />
+    <Compile Include="Views\Resources\Converters\BoolToVisibilityReversedConverter.cs" />
+    <Compile Include="Views\Resources\Converters\BoolToVisibilityConverter.cs" />
+    <Compile Include="Views\Resources\Converters\BoolToReversedBoolConverter.cs" />
+    <Compile Include="Views\Resources\Converters\CombineStringsConverter.cs" />
+    <Compile Include="Views\Resources\Converters\EqualsConverter.cs" />
+    <Compile Include="Views\Resources\Converters\HighlightedSearchResultToInlineConverter.cs" />
+    <Compile Include="Views\Resources\Converters\IsLargerThanXToBoolConverter.cs" />
+    <Compile Include="Views\Resources\Converters\IsNullToVisibilityReversedConverter.cs" />
+    <Compile Include="Views\Resources\Converters\IsNullToBoolReversedConverter.cs" />
+    <Compile Include="Views\Resources\Converters\IsTodayConverter.cs" />
+    <Compile Include="Views\Resources\Converters\ItemTypeEqualsTypeConverter.cs" />
+    <Compile Include="Views\Resources\Converters\ListToStringConverter.cs" />
+    <Compile Include="Views\Resources\Converters\ManyBoolsToBoolConverter.cs" />
+    <Compile Include="Views\Resources\Converters\SearchResultToPreviewConverter.cs" />
+    <Compile Include="Views\Resources\Converters\StringNullOrEmptyToBoolConverter.cs" />
+    <Compile Include="Views\Resources\Converters\StringNullOrEmptyToBoolReversedConverter.cs" />
+    <Compile Include="Views\AboutDialog.xaml.cs">
+      <DependentUpon>AboutDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Services\ErrorProvider.cs" />
+    <Compile Include="Helpers\RegexHelper.cs" />
+    <Compile Include="Helpers\StringHelper.cs" />
+    <Compile Include="Helpers\TreeHelper.cs" />
+    <Compile Include="Helpers\Win32Helper.cs" />
+    <Compile Include="Services\SingleInstanceService.cs" />
+    <Compile Include="Settings\CodeIDXSettings.cs" />
+    <Compile Include="ViewModels\FilterKind.cs" />
+    <Compile Include="Helpers\LuceneHelper.cs" />
+    <Compile Include="Services\Lucene\LineMatch.cs" />
+    <Compile Include="ViewModels\HighlightInfo.cs" />
+    <Compile Include="Services\FileWatcherService.cs" />
+    <Compile Include="ViewModels\ApplicationViewModel.cs" />
+    <Compile Include="ViewModels\IndexViewModel.cs" />
+    <Compile Include="Settings\RecentIndexSetting.cs" />
+    <Compile Include="ViewModels\SearchResultViewModel.cs" />
+    <Compile Include="Settings\SearchTabSettings.cs" />
+    <Compile Include="ViewModels\SearchViewModel.cs" />
+    <Compile Include="ViewModels\StatusKind.cs" />
+    <Compile Include="ViewModels\UserSettingsViewModel.cs" />
+    <Compile Include="ViewModels\ViewModel.cs" />
+    <Compile Include="Views\IndexDialog.xaml.cs">
+      <DependentUpon>IndexDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\OptionsDialog.xaml.cs">
+      <DependentUpon>OptionsDialog.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Views\AboutDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Services\Lucene\LuceneIndexer.cs" />
+    <Compile Include="Services\Lucene\LuceneSearcher.cs" />
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Views\IndexDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Resources\Controls\EditableAvalonEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\Resources\MainWindowResources.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\OptionsDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <None Include="CodeIDX_TemporaryKey.pfx" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\search.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\matchCase.png" />
+    <Resource Include="Views\Resources\Images\matchWholeWord.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\createIndex.png" />
+    <Resource Include="Views\Resources\Images\editIndex.png" />
+    <Resource Include="Views\Resources\Images\openIndex.png" />
+    <Resource Include="Views\Resources\Images\settings.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\refresh.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\add.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\info.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.5">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.5 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\code.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\autoRefresh.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\folder.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\filter.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\edit.png" />
+    <Resource Include="Views\Resources\Images\save.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\find.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\locked.png" />
+    <Resource Include="Views\Resources\Images\unlocked.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Views\Resources\Images\wildcard.png" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

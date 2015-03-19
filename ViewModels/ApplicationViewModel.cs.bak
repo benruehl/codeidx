@@ -1,0 +1,172 @@
+﻿using FileIndexer.Helpers;
+using FileIndexer.LuceneServices;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FileIndexer.ViewModels
+{
+    public class ApplicationViewModel : ViewModel
+    {
+
+        public static ApplicationViewModel Instance { get; private set; }
+
+        private IndexViewModel _CurrentIndexFile;
+
+        private string _SearchText;
+
+        private ObservableCollection<SearchResultViewModel> _SearchResults;
+        public ReadOnlyObservableCollection<SearchResultViewModel> SearchResults { get; private set; }
+
+        private ObservableCollection<FileFilter> _ActiveFileFilters;
+        public ReadOnlyObservableCollection<FileFilter> ActiveFileFilters { get; private set; }
+        public SettingsViewModel Settings { get; private set; }
+
+        public string SearchText
+        {
+            get
+            {
+                return _SearchText;
+            }
+            set
+            {
+                if (_SearchText != value)
+                {
+                    _SearchText = value;
+                    FirePropertyChanged("SearchText");
+                }
+            }
+        }
+
+        public IndexViewModel CurrentIndexFile
+        {
+            get
+            {
+                return _CurrentIndexFile;
+            }
+            private set
+            {
+                if (_CurrentIndexFile != value)
+                {
+                    _CurrentIndexFile = value;
+                    FirePropertyChanged("CurrentIndexFile");
+                }
+            }
+        }
+
+        public bool HasValidIndexDirectory
+        {
+            get
+            {
+                return CurrentIndexFile != null && LuceneHelper.IsValidIndexDirectory(CurrentIndexFile.IndexDirectory);
+            }
+        }
+
+        static ApplicationViewModel()
+        {
+            Instance = new ApplicationViewModel();
+        }
+
+        public ApplicationViewModel()
+        {
+            _SearchResults = new ObservableCollection<SearchResultViewModel>();
+            SearchResults = new ReadOnlyObservableCollection<SearchResultViewModel>(_SearchResults);
+
+            _ActiveFileFilters = new ObservableCollection<FileFilter>();
+            ActiveFileFilters = new ReadOnlyObservableCollection<FileFilter>(_ActiveFileFilters);
+
+            Settings = new SettingsViewModel();
+        }
+
+        public async Task RunCurrentSearch()
+        {
+            if (string.IsNullOrEmpty(SearchText) || CurrentIndexFile == null || !LuceneHelper.IsValidIndexDirectory(CurrentIndexFile.IndexDirectory))
+                return;
+
+            _SearchResults.Clear();
+            var searchResults = LuceneSearcher.Instance.Search(CurrentIndexFile, SearchText);
+            foreach(var result in searchResults)
+            {
+                _SearchResults.Add(result);
+            }
+        }
+
+        private void UpdateAvailableFileFilters()
+        {
+            if (CurrentIndexFile == null)
+                return;
+
+            var availableFileFilters = LuceneSearcher.Instance.GetAvailableFileExtensions(CurrentIndexFile).ToList();
+            foreach (var extension in availableFileFilters)
+            {
+                if (ActiveFileFilters.Any(cur => cur.Filter == extension))
+                    continue;
+
+                _ActiveFileFilters.Add(new FileFilter
+                {
+                    IsActive = true,
+                    Filter = extension
+                });
+            }
+
+            var deletedFilters = ActiveFileFilters.Where(cur => !availableFileFilters.Contains(cur.Filter)).ToList();
+            foreach (var delFilter in deletedFilters)
+                _ActiveFileFilters.Remove(delFilter);
+
+            NotifyActiveFileFiltersChanged();
+        }
+
+        public void LoadIndex(string indexFile)
+        {
+            CurrentIndexFile = IndexViewModel.Load(indexFile);
+            UpdateAvailableFileFilters();
+        }
+
+        public async Task UpdateIndex()
+        {
+            if (HasValidIndexDirectory)
+                await LuceneIndexer.UpdateIndexDirectory(CurrentIndexFile);
+        }
+
+        internal async Task CreateIndex(IndexViewModel dialogModel)
+        {
+            if (dialogModel == null)
+                return;
+
+            string newIndexDirectory = dialogModel.IndexDirectory;
+            if (Directory.Exists(newIndexDirectory))
+                Directory.Delete(newIndexDirectory, true);
+
+            await LuceneIndexer.CreateIndexDirectory(dialogModel.SourceDirectories, dialogModel.FileFilters, newIndexDirectory);
+            dialogModel.SaveIndexFile();
+
+            LoadIndex(dialogModel.IndexFile);
+        }
+
+        internal void AddActiveFileFilter(string fileFilter)
+        {
+            if (string.IsNullOrEmpty(fileFilter) || _ActiveFileFilters.Any(cur => cur.Filter == fileFilter))
+                return;
+
+            _ActiveFileFilters.Add(new FileFilter { Filter = fileFilter, IsActive = true });
+        }
+
+        internal void RemoveActiveFileFilter(string fileFilter)
+        {
+            if (string.IsNullOrEmpty(fileFilter))
+                return;
+
+            foreach (var delFilter in _ActiveFileFilters.Where(cur => cur.Filter == fileFilter).ToList())
+                _ActiveFileFilters.Remove(delFilter);
+        }
+
+        internal void NotifyActiveFileFiltersChanged()
+        {
+            FirePropertyChanged("ActiveFileFilters");
+        }
+    }
+}

@@ -1,0 +1,56 @@
+﻿<Window x:Class="CodeIDX.Views.AboutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About CodeIDX"
+        Height="220"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="Width"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="SingleBorderWindow">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="3" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <StackPanel Orientation="Horizontal">
+            <TextBlock x:Name="tbProductName" Margin="0,0,5,0"/>
+            <TextBlock x:Name="tbVersion" />
+            </StackPanel>
+            
+            <TextBlock Text="© 2014 Erik Kuhlig" />
+            <TextBlock Text="Contributors: Rene Rönisch, Benjamin Klawitter, Lars Hildebrand, Kamil Pietraszko" />
+        </StackPanel>
+
+
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="3" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Description:" />
+
+
+            <TextBox x:Name="tbDescription"
+                     Grid.Row="2"
+                     AcceptsReturn="False"
+                     IsReadOnly="True" />
+        </Grid>
+
+        <StackPanel Grid.Row="4"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom">
+            <Button Width="100"
+                    Content="OK"
+                    IsCancel="True"
+                    IsDefault="True" />
+        </StackPanel>
+    </Grid>
+</Window>
