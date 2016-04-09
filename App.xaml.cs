@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
+using System.IO;
 
 namespace CodeIDX
 {
@@ -21,6 +22,7 @@ namespace CodeIDX
     /// </summary>
     public partial class App : Application
     {
+        private string _exePath;
 
         public App()
         {
@@ -30,7 +32,11 @@ namespace CodeIDX
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             ErrorProvider.Instance.Init();
-            ErrorProvider.Instance.LogInfo("Starting …");
+
+            _exePath = System.IO.Path.GetFullPath(
+                            System.Environment.GetCommandLineArgs()[0]);
+
+            ErrorProvider.Instance.LogInfo("Starting " + _exePath);
 
             Settings.CodeIDXSettings.UpgradeAll();
 
@@ -40,12 +46,14 @@ namespace CodeIDX
         void App_Exit(object sender, ExitEventArgs e)
         {
             SingleInstanceService.Stop();
+            ErrorProvider.Instance.LogInfo("Ending " + _exePath);
+
         }
 
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             ErrorProvider.Instance.LogError(string.Empty, (Exception)e.ExceptionObject);
-            MessageBox.Show("An error occured.\nSee the log for details.", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("An error occured.\nSee the log (in Local App DATA\\CodeIDX) for details.", "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
             SingleInstanceService.Stop();
             Environment.Exit(1);

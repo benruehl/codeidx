@@ -57,6 +57,9 @@ namespace CodeIDX.Services.Lucene
                 return;
 
             IsIndexing = true;
+
+            ErrorProvider.Instance.LogInfo("CreateIndexDirectory " + targetIndexDirectory);
+
             try
             {
                 if (System.IO.Directory.Exists(targetIndexDirectory))
@@ -334,7 +337,10 @@ namespace CodeIDX.Services.Lucene
                         reader.DeleteDocument(docNum);
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("DeleteDocument Exception " + e.ToString());
+            }
         }
 
         internal void DeleteDocumentDirectory(string deletedDirectory, IndexViewModel index)
@@ -357,7 +363,10 @@ namespace CodeIDX.Services.Lucene
                     }
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("DeleteDocumentDirectory Exception " + e.ToString());
+            }
         }
 
         public void AddDocumentDirectory(string newDirectory, IndexViewModel index)
@@ -378,13 +387,18 @@ namespace CodeIDX.Services.Lucene
                     }
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("AddDocumentDirectory Exception " + e.ToString());
+            }
         }
 
         public void AddDocument(string newFile, IndexViewModel index)
         {
             if (string.IsNullOrEmpty(newFile) || !File.Exists(newFile) || !IsValidFile(newFile, index.FileFilters))
                 return;
+
+            ErrorProvider.Instance.LogInfo("AddDocument " + newFile);
 
             try
             {
@@ -395,7 +409,10 @@ namespace CodeIDX.Services.Lucene
                     writer.Optimize();
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("AddDocument Exception " + e.ToString());
+            }
         }
 
         public void UpdateDocument(string file, IndexViewModel index)
@@ -438,7 +455,10 @@ namespace CodeIDX.Services.Lucene
                         }
                     }
                 }
-                catch { }
+                catch (Exception e)
+                {
+                    ErrorProvider.Instance.LogError("UpdateDocument Exception " + e.ToString());
+                }
 
                 if (fileWasModified)
                 {

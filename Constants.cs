@@ -10,7 +10,12 @@ namespace CodeIDX
     public static class Constants
     {
 
-        public const string EnvDTEConstantVsViewKindTextView = "{7651A703-06E5-11D1-8EBD-00A0C90F26EA}";
+
+        // EnvDTE (the interface to Visual Studio automation) is used to
+	// open a file in VS from the app if the option to override the
+	// default file open handler is selected.  This is the GUID of the
+	// VS view to open (Text) when opening the file in VS.
+	public const string EnvDTEConstantVsViewKindTextView = "{7651A703-06E5-11D1-8EBD-00A0C90F26EA}";
 
         public static readonly Brush HighlightBrush = new SolidColorBrush(Color.FromArgb(0x7E, 0xF0, 0x9E, 0x00));
         public static readonly Brush SubHighlightBrush = new SolidColorBrush(Color.FromArgb(0x7E, 0x7B, 0xC9, 0x00));

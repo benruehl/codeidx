@@ -266,6 +266,8 @@ namespace CodeIDX.ViewModels
             if (IsReady || CurrentOperationCancellationTokenSource == null)
                 return;
 
+            ErrorProvider.Instance.LogInfo("CancelCurrentOperation");
+
             CurrentOperationCancellationTokenSource.Cancel();
         }
 
@@ -278,24 +280,23 @@ namespace CodeIDX.ViewModels
                 return false;
             }
 
+            ErrorProvider.Instance.LogInfo("BeginOperation " + operationKind.ToString());
             Status = operationKind;
             return true;
         }
 
-        internal bool BeginOperation(StatusKind operationStatus, out CancellationToken cancelToken)
+        internal bool BeginOperation(StatusKind operationKind, out CancellationToken cancelToken)
         {
-            if (!IsReady)
+            if (BeginOperation(operationKind))
             {
-                SignalOperationInProgress();
+                CurrentOperationCancellationTokenSource = new CancellationTokenSource();
+                cancelToken = CurrentOperationCancellationTokenSource.Token;
+                return true;
+            }
+            else
+            {
                 return false;
             }
-
-            Status = operationStatus;
-
-            CurrentOperationCancellationTokenSource = new CancellationTokenSource();
-            cancelToken = CurrentOperationCancellationTokenSource.Token;
-
-            return true;
         }
 
         public void EndOperation()
