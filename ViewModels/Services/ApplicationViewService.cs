@@ -84,28 +84,25 @@ namespace CodeIDX.ViewModels.Services
                 return;
             }
 
+            Guid opId = Guid.Empty;
             CancellationToken cancelToken;
-            if (!ApplicationView.BeginOperation(StatusKind.Searching, out cancelToken))
+            if (!ApplicationView.BeginOperation(StatusKind.Searching, out opId, out cancelToken))
                 return;
 
-            try
-            {
-                if (searchView.IsSearchingInResults)
-                    await Task.Run(() => searchView.RunFileSearch(ApplicationView.CurrentIndexFile, searchText, searchView.FixedResultFiles, cancelToken), cancelToken);
-                else
-                    await Task.Run(() => searchView.RunSearch(ApplicationView.CurrentIndexFile, searchText, cancelToken), cancelToken);
-            }
-            finally
-            {
-                ApplicationView.EndOperation();
-            }
+            Action lazySearchFinishedAction = () => ApplicationView.EndOperation(opId);
+            if (searchView.IsSearchingInResults)
+                await Task.Run(() => searchView.RunFileSearch(ApplicationView.CurrentIndexFile, searchText, searchView.FixedResultFiles, cancelToken, lazySearchFinishedAction), cancelToken);
+            else
+                await Task.Run(() => searchView.RunSearch(ApplicationView.CurrentIndexFile, searchText, cancelToken, lazySearchFinishedAction), cancelToken);
         }
 
         public static async Task<bool> LoadIndex(string indexFile)
         {
             if (ApplicationView.CurrentIndexFile != null && ApplicationView.CurrentIndexFile.IndexFile == indexFile)
                 return true;
-            if (!ApplicationView.BeginOperation(StatusKind.Loading))
+
+            Guid opId = Guid.Empty;
+            if (!ApplicationView.BeginOperation(StatusKind.Loading, out opId))
                 return false;
 
             try
@@ -158,7 +155,7 @@ namespace CodeIDX.ViewModels.Services
             }
             finally
             {
-                ApplicationView.EndOperation();
+                ApplicationView.EndOperation(opId);
             }
 
             RefreshIndexAtStartup(ApplicationView.CurrentIndexFile);
@@ -236,7 +233,9 @@ namespace CodeIDX.ViewModels.Services
         {
             if (ApplicationView.CurrentIndexFile != null && ApplicationView.CurrentIndexFile.IndexFile == indexFile)
                 return true;
-            if (!ApplicationView.BeginOperation(StatusKind.Loading))
+
+            Guid opId = Guid.Empty;
+            if (!ApplicationView.BeginOperation(StatusKind.Loading, out opId))
                 return false;
 
             try
@@ -257,7 +256,7 @@ namespace CodeIDX.ViewModels.Services
             }
             finally
             {
-                ApplicationView.EndOperation();
+                ApplicationView.EndOperation(opId);
             }
 
             RefreshIndexAtStartup(ApplicationView.CurrentIndexFile);
@@ -266,8 +265,9 @@ namespace CodeIDX.ViewModels.Services
 
         public static async Task UpdateIndex()
         {
+            Guid opId = Guid.Empty;
             CancellationToken cancelToken;
-            if (!ApplicationView.BeginOperation(StatusKind.Updating, out cancelToken))
+            if (!ApplicationView.BeginOperation(StatusKind.Updating, out opId, out cancelToken))
                 return;
 
             if (!ApplicationView.HasValidIndexDirectory)
@@ -275,7 +275,8 @@ namespace CodeIDX.ViewModels.Services
 
             try
             {
-                await Task.Run(() => LuceneIndexer.Instance.UpdateIndexDirectory(ApplicationView.CurrentIndexFile, cancelToken), cancelToken);
+                await Task.Run(() => LuceneIndexer.Instance.UpdateIndexDirectoryInBackground(ApplicationView.CurrentIndexFile, cancelToken), cancelToken);
+
                 ApplicationView.UpdateSearchFilter();
 
                 ApplicationView.CurrentIndexFile.LastFullRefresh = DateTime.Now;
@@ -283,7 +284,7 @@ namespace CodeIDX.ViewModels.Services
             }
             finally
             {
-                ApplicationView.EndOperation();
+                ApplicationView.EndOperation(opId);
             }
         }
 

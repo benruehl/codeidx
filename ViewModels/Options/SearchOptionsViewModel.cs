@@ -7,8 +7,10 @@ namespace CodeIDX.ViewModels.Options
 {
     public class SearchOptionsViewModel : ViewModel
     {
-    
+
         public bool EnableFilterByDefault { get; set; }
+        public int PageSize { get; set; }
+        public bool LoadRemainingLazyResults { get; set; }
         public bool InsertTextFromClipBoard { get; set; }
         public bool EnableSearchHistory { get; set; }
         public bool EnableSearchInResults { get; set; }

@@ -23,8 +23,14 @@
             <TextBlock x:Name="tbVersion" />
             </StackPanel>
             
-            <TextBlock Text="© 2014 Erik Kuhlig" />
+            <TextBlock Text="© 2015 Erik Kuhlig" />
             <TextBlock Text="Contributors: Rene Rönisch, Benjamin Klawitter, Lars Hildebrand, Kamil Pietraszko" />
+            <TextBlock>
+                Website: 
+                <Hyperlink NavigateUri="http://codeidx.codeplex.com" RequestNavigate="Hyperlink_RequestNavigate">
+                    codeidx.codeplex.com
+                </Hyperlink>
+            </TextBlock>
         </StackPanel>
 
 

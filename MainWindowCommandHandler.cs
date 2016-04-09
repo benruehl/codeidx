@@ -164,16 +164,34 @@ namespace CodeIDX
 
             if (saveDialog.ShowDialog() == true)
             {
+                var resultsToExport = ApplicationView.CurrentSearch.SearchResultsView.View.OfType<SearchResultViewModel>().ToList();
+
                 using (FileStream fs = new FileStream(saveDialog.FileName, FileMode.Create, FileAccess.Write))
                 using (StreamWriter writer = new StreamWriter(fs))
                 {
                     //write info
                     writer.WriteLine(string.Format("Index: {0}", ApplicationView.CurrentIndexFile.IndexFile));
                     writer.WriteLine(string.Format("Search: {0}", ApplicationView.CurrentSearch.LastSearchText));
-                    writer.WriteLine(string.Format("Results: {0}", ApplicationView.CurrentSearch.SearchResultsView.Count));
+                    writer.WriteLine(string.Format("Results: {0} in {1} files", resultsToExport.Count, ApplicationView.CurrentSearch.FileCount));
+
+                    if (ApplicationView.CurrentSearch.IsFilterEnabled)
+                    {
+                        if (!string.IsNullOrEmpty(ApplicationView.CurrentSearch.DirectoryFilterExpression))
+                        {
+                            writer.WriteLine(string.Format("Directory Filter: {0}", ApplicationView.CurrentSearch.DirectoryFilterExpression));
+                        }
+                        if (!string.IsNullOrEmpty(ApplicationView.CurrentSearch.FileFilterExpression))
+                        {
+                            writer.WriteLine(string.Format("Filename Filter: {0}", ApplicationView.CurrentSearch.FileFilterExpression));
+                        }
+                        if (ApplicationView.CurrentSearch.ActiveFileFilters.Count != ApplicationView.CurrentSearch.AvailableFileFilters.Count)
+                        {
+                            writer.WriteLine(string.Format("Filetype Filter: {0}", ApplicationView.CurrentSearch.ActiveFileFilters.Aggregate((next, result) => result + ", " + next)));
+                        }
+                    }
 
                     string lastFile = string.Empty;
-                    foreach (var curResult in ApplicationView.CurrentSearch.SearchResultsView.OfType<SearchResultViewModel>())
+                    foreach (var curResult in resultsToExport)
                     {
                         string curFile = curResult.GetFilePath();
                         if (lastFile != curFile)

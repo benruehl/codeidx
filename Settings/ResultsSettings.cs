@@ -70,5 +70,65 @@ namespace CodeIDX.Settings
             }
         }
 
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseNotepadAsDefault
+        {
+            get
+            {
+                return (bool)(this["UseNotepadAsDefault"]);
+            }
+            set
+            {
+                SetValue("UseNotepadAsDefault", value);
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseCustomEditorAsDefault
+        {
+            get
+            {
+                return (bool)(this["UseCustomEditorAsDefault"]);
+            }
+            set
+            {
+                SetValue("UseCustomEditorAsDefault", value);
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseDefaultEditorAsDefault
+        {
+            get
+            {
+                return (bool)(this["UseDefaultEditorAsDefault"]);
+            }
+            set
+            {
+                SetValue("UseDefaultEditorAsDefault", value);
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DefaultEditorCommandLineOptions
+        {
+            get
+            {
+                return (string)(this["DefaultEditorCommandLineOptions"]);
+            }
+            set
+            {
+                SetValue("DefaultEditorCommandLineOptions", value);
+            }
+        }
+
     }
 }

@@ -18,15 +18,26 @@ namespace CodeIDX.ViewModels
     public class ApplicationViewModel : ViewModel
     {
 
+        private class OperationData
+        {
+            public StatusKind Status { get; set; }
+            public CancellationTokenSource CancelTokenSource { get; set; }
+        }
+
+        private bool _IsAutomaticUpdateInProgress;
         private bool _PreviewSaved;
         private bool _OperationCancelled;
         private CancellationTokenSource _CurrentOperationCancellationTokenSource;
         private bool _StatusChangeAttempted;
         private bool _IsReady;
+        private bool _IsUpdating;
         private SearchViewModel _CurrentSearch;
         private bool _AutoUpdateIndex;
         private StatusKind _Status;
         private IndexViewModel _CurrentIndexFile;
+        public Action ScrollResultsToSartAction { get; set; }
+
+        private Dictionary<Guid, OperationData> _OngoingOperations = new Dictionary<Guid, OperationData>();
 
         public FileWatcherService FileWatcher { get; private set; }
         public UserSettingsViewModel UserSettings { get; private set; }
@@ -119,6 +130,32 @@ namespace CodeIDX.ViewModels
             }
         }
 
+        public bool IsUpdating
+        {
+            get
+            {
+                return _IsUpdating;
+            }
+            private set
+            {
+                _IsUpdating = value;
+                FirePropertyChanged("IsUpdating");
+            }
+        }
+
+        public bool IsAutomaticUpdateInProgress
+        {
+            get
+            {
+                return _IsAutomaticUpdateInProgress;
+            }
+            set
+            {
+                _IsAutomaticUpdateInProgress = value;
+                FirePropertyChanged("IsAutomaticUpdateInProgress");
+            }
+        }
+
         public StatusKind Status
         {
             get
@@ -128,7 +165,8 @@ namespace CodeIDX.ViewModels
             private set
             {
                 _Status = value;
-                IsReady = (Status == StatusKind.Ready);
+                IsReady = (Status == StatusKind.Ready || Status == StatusKind.Updating);
+                IsUpdating = (Status == StatusKind.Updating);
 
                 FirePropertyChanged("Status");
             }
@@ -222,9 +260,16 @@ namespace CodeIDX.ViewModels
 
             var availableFileFilters = LuceneSearcher.Instance.GetAvailableFileFilters(CurrentIndexFile).ToList();
             newSearch.UpdateAvailableFileFilters(availableFileFilters);
-            _Searches.Add(newSearch);
+            newSearch.NewSearchResultsLoaded += NewSearch_NewSearchResultsLoaded;
 
+            _Searches.Add(newSearch);
             CurrentSearch = newSearch;
+        }
+
+        private void NewSearch_NewSearchResultsLoaded()
+        {
+            if (ScrollResultsToSartAction != null)
+                ScrollResultsToSartAction();
         }
 
         public async void SignalPreviewSaved()
@@ -263,7 +308,7 @@ namespace CodeIDX.ViewModels
 
         internal void CancelCurrentOperation()
         {
-            if (IsReady || CurrentOperationCancellationTokenSource == null)
+            if (!CanCurrentOperationCancel)
                 return;
 
             ErrorProvider.Instance.LogInfo("CancelCurrentOperation");
@@ -272,8 +317,10 @@ namespace CodeIDX.ViewModels
         }
 
 
-        internal bool BeginOperation(StatusKind operationKind)
+        internal bool BeginOperation(StatusKind operationKind, out Guid operationId)
         {
+            operationId = Guid.Empty;
+
             if (!IsReady)
             {
                 SignalOperationInProgress();
@@ -282,26 +329,40 @@ namespace CodeIDX.ViewModels
 
             ErrorProvider.Instance.LogInfo("BeginOperation " + operationKind.ToString());
             Status = operationKind;
+
+            operationId = Guid.NewGuid();
+            _OngoingOperations.Add(operationId, new OperationData { Status = operationKind });
+
             return true;
         }
 
-        internal bool BeginOperation(StatusKind operationKind, out CancellationToken cancelToken)
+        public void ResetOngoingOperations()
         {
-            if (BeginOperation(operationKind))
-            {
-                CurrentOperationCancellationTokenSource = new CancellationTokenSource();
-                cancelToken = CurrentOperationCancellationTokenSource.Token;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            _OngoingOperations.Clear();
         }
 
-        public void EndOperation()
+        internal bool BeginOperation(StatusKind operationStatus, out Guid operationId, out CancellationToken cancelToken)
         {
-            Status = StatusKind.Ready;
+            if (!BeginOperation(operationStatus, out operationId))
+                return false;
+
+            CurrentOperationCancellationTokenSource = new CancellationTokenSource();
+            cancelToken = CurrentOperationCancellationTokenSource.Token;
+
+            _OngoingOperations[operationId].CancelTokenSource = CurrentOperationCancellationTokenSource;
+            return true;
+        }
+
+        public void EndOperation(Guid operationId)
+        {
+            bool operationFound = _OngoingOperations.Remove(operationId);
+            if (!operationFound)
+                return;
+
+            if (_OngoingOperations.Count > 0)
+                Status = _OngoingOperations.Last().Value.Status;
+            else
+                Status = StatusKind.Ready;
 
             if (CurrentOperationCancellationTokenSource != null &&
                 CurrentOperationCancellationTokenSource.Token.IsCancellationRequested)
@@ -309,7 +370,10 @@ namespace CodeIDX.ViewModels
                 SignalOperationCancelled();
             }
 
-            CurrentOperationCancellationTokenSource = null;
+            if (_OngoingOperations.Count > 0)
+                CurrentOperationCancellationTokenSource = _OngoingOperations.Last().Value.CancelTokenSource;
+            else
+                CurrentOperationCancellationTokenSource = null;
         }
 
         internal void AddToSearchHistory(string searchText)
@@ -339,5 +403,6 @@ namespace CodeIDX.ViewModels
             CodeIDXSettings.Default.SearchHistory = SearchHistory.ToList();
             UserSettings.Save();
         }
+
     }
 }

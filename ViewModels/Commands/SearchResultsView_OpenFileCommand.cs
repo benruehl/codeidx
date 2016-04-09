@@ -16,15 +16,54 @@ namespace CodeIDX.ViewModels.Commands
 
         protected override void Execute(SearchResultViewModel contextViewModel)
         {
+            OpenFileInDefaultEditor(contextViewModel);
+        }
+
+        public static void OpenFileInDefaultEditor(SearchResultViewModel contextViewModel)
+        {
+            if (contextViewModel == null)
+                return;
+
             try
             {
                 string file = contextViewModel.GetFilePath();
-                if (!CodeIDXSettings.Results.UseVisualStudioAsDefault || !Win32Helper.OpenInVisualStudio(file, contextViewModel.LineNumber))
+                bool success = false;
+
+                if (CodeIDXSettings.Results.UseCustomEditorAsDefault &&
+                    !string.IsNullOrWhiteSpace(CodeIDXSettings.Results.DefaultEditorCommandLineOptions))
                 {
+                    string commandLineOptions = CodeIDXSettings.Results.DefaultEditorCommandLineOptions;
+                    int firstWhitespaceIndex = commandLineOptions.IndexOf(" ");
+                    if (firstWhitespaceIndex != -1)
+                    {
+                        string editor = commandLineOptions.Substring(0, firstWhitespaceIndex);
+                        string arguments = commandLineOptions.Substring(firstWhitespaceIndex + 1).ToLower();
+
+                        arguments = arguments.Replace("$file", "\"" + file + "\"")
+                                             .Replace("$directory", contextViewModel.Directory)
+                                             .Replace("$line", contextViewModel.LineNumber.ToString());
+
+                        Process.Start(editor, arguments);
+                        success = true;
+                    }
+                }
+                else if (CodeIDXSettings.Results.UseVisualStudioAsDefault)
+                {
+                    success = Win32Helper.OpenInVisualStudio(file, contextViewModel.LineNumber);
+                }
+                else if (CodeIDXSettings.Results.UseNotepadAsDefault)
+                {
+                    success = SearchResultsView_OpenFileInNotePadCommand.OpenInNotepad(file, contextViewModel.LineNumber);
+                }
+
+                if (!success)
+                {
+                    //use default application
                     Process.Start(file);
                 }
             }
             catch { }
         }
+
     }
 }

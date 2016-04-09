@@ -11,6 +11,7 @@ namespace CodeIDX.ViewModels.Options
     {
 
         public GeneralOptionsViewModel General { get; private set; }
+        public IndexOptionsViewModel Index { get; private set; }
         public ResultOptionsViewModel Results { get; private set; }
         public SearchOptionsViewModel Search { get; private set; }
         public BlacklistOptionsViewModel Blacklist { get; private set; }
@@ -30,9 +31,16 @@ namespace CodeIDX.ViewModels.Options
                 RefreshIndexAtStartup = CodeIDXSettings.General.RefreshIndexAtStartup
             };
 
+            Index = new IndexOptionsViewModel
+            {
+                DisableOptimizeIndex = CodeIDXSettings.Index.DisableOptimizeIndex
+            };
+
             Search = new SearchOptionsViewModel
             {
                 EnableFilterByDefault = CodeIDXSettings.Search.EnableFilterByDefault,
+                PageSize = CodeIDXSettings.Search.PageSize,
+                LoadRemainingLazyResults = CodeIDXSettings.Search.LoadRemainingLazyResults,
                 InsertTextFromClipBoard = CodeIDXSettings.Search.InsertTextFromClipBoard,
                 EnableSearchHistory = CodeIDXSettings.Search.EnableSearchHistory,
                 EnableSearchInResults = CodeIDXSettings.Search.EnableSearchInResults,
@@ -44,6 +52,10 @@ namespace CodeIDX.ViewModels.Options
             {
                 SelectMatchInPreview = CodeIDXSettings.Results.SelectMatchInPreview,
                 UseVisualStudioAsDefault = CodeIDXSettings.Results.UseVisualStudioAsDefault,
+                UseNotepadAsDefault = CodeIDXSettings.Results.UseNotepadAsDefault,
+                UseCustomEditorAsDefault = CodeIDXSettings.Results.UseCustomEditorAsDefault,
+                UseDefaultEditorAsDefault = CodeIDXSettings.Results.UseDefaultEditorAsDefault,
+                DefaultEditorCommandLineOptions = CodeIDXSettings.Results.DefaultEditorCommandLineOptions,
                 EnableEditMatchOnDoubleClick = CodeIDXSettings.Results.EnableEditMatchOnDoubleClick,
                 FilterFileOnEnter = CodeIDXSettings.Results.FilterFileOnEnter
             };
@@ -71,8 +83,13 @@ namespace CodeIDX.ViewModels.Options
             CodeIDXSettings.General.LoadLastIndexOnStartup = General.LoadLastIndexOnStartup;
             CodeIDXSettings.General.RefreshIndexAtStartup = General.RefreshIndexAtStartup;
 
+            //Index
+            CodeIDXSettings.Index.DisableOptimizeIndex = Index.DisableOptimizeIndex;
+
             //Search
             CodeIDXSettings.Search.EnableFilterByDefault = Search.EnableFilterByDefault;
+            CodeIDXSettings.Search.PageSize = Search.PageSize;
+            CodeIDXSettings.Search.LoadRemainingLazyResults = Search.LoadRemainingLazyResults;
             CodeIDXSettings.Search.InsertTextFromClipBoard = Search.InsertTextFromClipBoard;
             CodeIDXSettings.Search.EnableSearchHistory = Search.EnableSearchHistory;
             CodeIDXSettings.Search.EnableSearchInResults = Search.EnableSearchInResults;
@@ -82,6 +99,10 @@ namespace CodeIDX.ViewModels.Options
             //Results
             CodeIDXSettings.Results.SelectMatchInPreview = Results.SelectMatchInPreview;
             CodeIDXSettings.Results.UseVisualStudioAsDefault = Results.UseVisualStudioAsDefault;
+            CodeIDXSettings.Results.UseNotepadAsDefault = Results.UseNotepadAsDefault;
+            CodeIDXSettings.Results.UseCustomEditorAsDefault = Results.UseCustomEditorAsDefault;
+            CodeIDXSettings.Results.DefaultEditorCommandLineOptions = Results.DefaultEditorCommandLineOptions;
+            CodeIDXSettings.Results.UseDefaultEditorAsDefault = Results.UseDefaultEditorAsDefault;
             CodeIDXSettings.Results.EnableEditMatchOnDoubleClick = Results.EnableEditMatchOnDoubleClick;
             CodeIDXSettings.Results.FilterFileOnEnter = Results.FilterFileOnEnter;
 

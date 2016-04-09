@@ -111,15 +111,6 @@ namespace CodeIDX.ViewModels
             FileFilters = new List<string> { "*.cs", "*.txt", "*.xml", "*.xaml" };
         }
 
-        internal void AddSourceDirectory(string directoryPath)
-        {
-            if (!SourceDirectories.Contains(directoryPath))
-            {
-                SourceDirectories.Add(directoryPath);
-                FirePropertyChanged("SourceDirectories");
-            }
-        }
-
         internal void SaveIndexFile()
         {
             if (string.IsNullOrEmpty(IndexFile))

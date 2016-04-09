@@ -91,27 +91,82 @@ namespace CodeIDX.Services
 
         void Watcher_Renamed(object sender, RenamedEventArgs e)
         {
-            LuceneIndexer.Instance.DeleteDocument(e.OldFullPath, ApplicationView.CurrentIndexFile);
-            LuceneIndexer.Instance.DeleteDocumentDirectory(e.OldFullPath, ApplicationView.CurrentIndexFile);
+            try
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = true;
 
-            LuceneIndexer.Instance.AddDocument(e.FullPath, ApplicationView.CurrentIndexFile);
-            LuceneIndexer.Instance.AddDocumentDirectory(e.FullPath, ApplicationView.CurrentIndexFile);
+                LuceneIndexer.Instance.DeleteDocument(e.OldFullPath, ApplicationView.CurrentIndexFile);
+                LuceneIndexer.Instance.DeleteDocumentDirectory(e.OldFullPath, ApplicationView.CurrentIndexFile);
+
+                LuceneIndexer.Instance.AddDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+                LuceneIndexer.Instance.AddDocumentDirectory(e.FullPath, ApplicationView.CurrentIndexFile);
+            }
+            finally
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = false;
+            }
         }
 
         void Watcher_Deleted(object sender, FileSystemEventArgs e)
         {
-            LuceneIndexer.Instance.DeleteDocument(e.FullPath, ApplicationView.CurrentIndexFile);
-            LuceneIndexer.Instance.DeleteDocumentDirectory(e.FullPath, ApplicationView.CurrentIndexFile);
+            try
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = true;
+
+                LuceneIndexer.Instance.DeleteDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+                LuceneIndexer.Instance.DeleteDocumentDirectory(e.FullPath, ApplicationView.CurrentIndexFile);
+            }
+            finally
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = false;
+            }
         }
 
         void Watcher_Created(object sender, FileSystemEventArgs e)
         {
-            LuceneIndexer.Instance.AddDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+            try
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = true;
+
+                if (IsDirectory(e.FullPath))
+                    LuceneIndexer.Instance.AddDocumentDirectory(e.FullPath, ApplicationView.CurrentIndexFile);
+                else
+                    LuceneIndexer.Instance.AddDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+            }
+            finally
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = false;
+            }
         }
 
         void Watcher_Changed(object sender, FileSystemEventArgs e)
         {
-            LuceneIndexer.Instance.UpdateDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+            try
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = true;
+
+                LuceneIndexer.Instance.UpdateDocument(e.FullPath, ApplicationView.CurrentIndexFile);
+            }
+            finally
+            {
+                ApplicationService.ApplicationView.IsAutomaticUpdateInProgress = false;
+            }
+        }
+
+        private bool IsDirectory(string path)
+        {
+            if (!File.Exists(path) && !Directory.Exists(path))
+                return false;
+
+            try
+            {
+                FileAttributes attributes = File.GetAttributes(path);
+                return (attributes & FileAttributes.Directory) == FileAttributes.Directory;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
     }

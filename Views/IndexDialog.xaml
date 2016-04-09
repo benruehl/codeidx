@@ -35,19 +35,22 @@
 
             <TextBlock Grid.Column="1"
                        Text="Name" />
-            <TextBox Grid.Column="3"
+            <TextBox x:Name="tbName"
+                     Grid.Column="3"
                      Grid.ColumnSpan="3"
                      Text="{Binding Name,
-                                    UpdateSourceTrigger=PropertyChanged}"
+                                    UpdateSourceTrigger=Explicit}"
                      ToolTip="Name of the index" />
 
             <TextBlock Grid.Row="2"
                        Grid.Column="1"
                        Text="Location" />
-            <TextBox Grid.Row="2"
+            <TextBox x:Name="tbStorePath"
+                     Grid.Row="2"
                      Grid.Column="3"
                      IsReadOnly="True"
-                     Text="{Binding StorePath}"
+                     Text="{Binding StorePath,
+                                    UpdateSourceTrigger=Explicit}"
                      ToolTip="Location where the index will be created" />
 
             <Button Grid.Row="2"
@@ -80,10 +83,11 @@
                           Grid.Column="0"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
-                <TextBox AcceptsReturn="True"
+                <TextBox x:Name="tbSourceDirectories"
+                         AcceptsReturn="True"
                          Text="{Binding SourceDirectories,
                                         Converter={x:Static Converters:ListToStringConverter.Instance},
-                                        UpdateSourceTrigger=LostFocus}"
+                                        UpdateSourceTrigger=Explicit}"
                          TextWrapping="Wrap"
                          ToolTip="One or more directories to index" />
             </ScrollViewer>
@@ -110,10 +114,11 @@
 
             <ScrollViewer Grid.Row="2"
                           VerticalScrollBarVisibility="Auto">
-                <TextBox AcceptsReturn="True"
+                <TextBox x:Name="tbFileFilters"
+                         AcceptsReturn="True"
                          Text="{Binding FileFilters,
                                         Converter={x:Static Converters:ListToStringConverter.Instance},
-                                        UpdateSourceTrigger=LostFocus}"
+                                        UpdateSourceTrigger=Explicit}"
                          TextWrapping="Wrap"
                          ToolTip="One or more filetype extensions&#10;Clear to index all filetypes" />
             </ScrollViewer>
@@ -135,12 +140,14 @@
                 <Button.IsEnabled>
                     <MultiBinding Converter="{x:Static Converters:ManyBoolsToBoolConverter.Instance}">
                         <Binding Converter="{x:Static Converters:StringNullOrEmptyToBoolReversedConverter.Instance}"
-                                 Path="Name" />
+                                 ElementName="tbName"
+                                 Path="Text" />
                         <Binding Converter="{x:Static Converters:StringNullOrEmptyToBoolReversedConverter.Instance}"
-                                 Path="StorePath" />
-                        <Binding Converter="{x:Static Converters:IsLargerThanXToBoolConverter.Instance}"
-                                 ConverterParameter="0"
-                                 Path="SourceDirectories.Count" />
+                                 ElementName="tbStorePath"
+                                 Path="Text" />
+                        <Binding Converter="{x:Static Converters:StringNullOrEmptyToBoolReversedConverter.Instance}"
+                                 ElementName="tbSourceDirectories"
+                                 Path="Text" />
                     </MultiBinding>
                 </Button.IsEnabled>
             </Button>

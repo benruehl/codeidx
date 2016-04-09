@@ -35,8 +35,9 @@ namespace CodeIDX.ViewModels.Commands
 
         private async void CreateIndex(ApplicationViewModel contextViewModel, IndexViewModel indexModel)
         {
+            Guid opId = Guid.Empty;
             CancellationToken cancelToken;
-            if (!contextViewModel.BeginOperation(StatusKind.Indexing, out cancelToken))
+            if (!contextViewModel.BeginOperation(StatusKind.Indexing, out opId, out cancelToken))
                 return;
 
             try
@@ -61,12 +62,12 @@ namespace CodeIDX.ViewModels.Commands
                     return;
                 }
 
-                contextViewModel.EndOperation();
+                contextViewModel.EndOperation(opId);
                 await ApplicationViewService.LoadIndex(indexModel.IndexFile);
             }
             finally
             {
-                contextViewModel.EndOperation();
+                contextViewModel.EndOperation(opId);
             }
         }
     }

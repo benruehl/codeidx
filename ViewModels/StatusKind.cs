@@ -10,8 +10,10 @@ namespace CodeIDX.ViewModels
         Ready,
         Searching,
         Indexing,
+        Optimizing,
         Updating,
         Loading,
-        Saved
+        Saved,
+        Writing
     }
 }

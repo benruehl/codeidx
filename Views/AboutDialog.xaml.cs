@@ -21,5 +21,15 @@ namespace CodeIDX.Views
             tbVersion.Text = info.ProductVersion;
         }
 
+        private void Hyperlink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+                e.Handled = true;
+            }
+            catch { }
+        }
+
     }
 }

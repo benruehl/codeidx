@@ -4,6 +4,7 @@
         xmlns:Converters="clr-namespace:CodeIDX.Views.Resources.Converters"
         xmlns:OptionViewModels="clr-namespace:CodeIDX.ViewModels.Options"
         xmlns:Settings="clr-namespace:CodeIDX.Settings"
+        xmlns:tookit="http://schemas.xceed.com/wpf/xaml/toolkit"
         Title="Options"
         Width="500"
         Height="400"
@@ -13,6 +14,9 @@
         ResizeMode="NoResize">
     <Window.Resources>
         <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,0,0,3" />
+        </Style>
+        <Style TargetType="RadioButton">
             <Setter Property="Margin" Value="0,0,0,3" />
         </Style>
 
@@ -64,10 +68,59 @@
             </StackPanel>
         </DataTemplate>
 
+        <!--  Index Template  -->
+        <DataTemplate DataType="{x:Type OptionViewModels:IndexOptionsViewModel}">
+            <StackPanel Margin="5"
+                        Orientation="Vertical">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <CheckBox VerticalAlignment="Center"
+                              Content="Disable index optimization"
+                              IsChecked="{Binding DisableOptimizeIndex}"
+                              ToolTip="(Recommended) Disable manual index optimization.&#10;Disable for better performance when indexing many files.&#10;The index will still be optimized in small steps from time to time." />
+                    <Button Grid.Column="1"
+                            Click="OptimizeNow_Click"
+                            Content="Optimize Now"
+                            ToolTip="Optimize manually in case you're experiencing noticable performance issues.&#10;Optimizing will increase the search performance.&#10;This will take some time depending on the index size." />
+                </Grid>
+            </StackPanel>
+        </DataTemplate>
+
         <!--  Search Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:SearchOptionsViewModel}">
             <StackPanel Margin="5"
                         Orientation="Vertical">
+                <GroupBox Margin="0,0,0,3"
+                          Header="Paging"
+                          Padding="3">
+                    <StackPanel Orientation="Vertical">
+                        <Grid Margin="0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="3" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock VerticalAlignment="Center"
+                                       Text="Min Page Size" />
+                            <tookit:IntegerUpDown Grid.Column="2"
+                                                  Width="80"
+                                                  Increment="100"
+                                                  Maximum="10000"
+                                                  Minimum="100"
+                                                  Value="{Binding PageSize}" />
+                        </Grid>
+
+                        <CheckBox Content="Load all items when background search is finished"
+                                  IsChecked="{Binding LoadRemainingLazyResults}"
+                                  ToolTip="After displaying the first results, the search continues in the background." />
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Margin="0,0,0,3"
                           Header="New Search"
                           Padding="3">
@@ -106,13 +159,45 @@
                           IsChecked="{Binding SelectMatchInPreview}" />
                 <CheckBox Content="Edit match on double click"
                           IsChecked="{Binding EnableEditMatchOnDoubleClick}" />
-                <CheckBox Content="Open file in Visual Studio by default"
-                          IsChecked="{Binding UseVisualStudioAsDefault}"
-                          ToolTip="Check to open a match Visual Studio by default&#10;Otherwise the default program is used" />
                 <CheckBox Content="Filter file on Enter"
-                          ToolTip="Default behavior is open file"
-                          IsChecked="{Binding FilterFileOnEnter}" />
+                          IsChecked="{Binding FilterFileOnEnter}"
+                          ToolTip="Default behavior is open file" />
 
+                <GroupBox Margin="0,0,0,3"
+                          Header="Default Editor"
+                          Padding="3"
+                          ToolTip="Select the default editor to use when double clicking a search result.">
+                    <StackPanel>
+                        <RadioButton Content="Default"
+                                     GroupName="defaultTool"
+                                     IsChecked="{Binding UseDefaultEditorAsDefault}"
+                                     ToolTip="Open a match in the default editor of the result file type." />
+                        <RadioButton Content="Visual Studio"
+                                     GroupName="defaultTool"
+                                     IsChecked="{Binding UseVisualStudioAsDefault}"
+                                     ToolTip="Open a match in Visual Studio by default&#10;This option may cause issues on some systems. In that case disable it." />
+                        <RadioButton Content="Notepad"
+                                     GroupName="defaultTool"
+                                     IsChecked="{Binding UseNotepadAsDefault}"
+                                     ToolTip="Open a match in Notepad by default&#10;If Notepad++ is installed, it is opened instead." />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="3" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <RadioButton VerticalAlignment="Center"
+                                         Content="Custom"
+                                         GroupName="defaultTool"
+                                         IsChecked="{Binding UseCustomEditorAsDefault}"
+                                         ToolTip="Open a match in a custom editor.&#x0a;arguments:&#x0a;$file - file path&#x0a;$directory - directory path&#x0a;$line - line number&#x0a;e.g. notepad++ $file -n$line" />
+                            <TextBox Grid.Column="2"
+                                     Text="{Binding DefaultEditorCommandLineOptions}"
+                                     ToolTip="Open a match in a custom editor.&#x0a;arguments:&#x0a;$file - file path&#x0a;$directory - directory path&#x0a;$line - line number&#x0a;e.g. notepad++ $file -n$line" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
             </StackPanel>
         </DataTemplate>
 
@@ -122,8 +207,8 @@
                         Orientation="Vertical">
 
                 <CheckBox Content="Show file count in results"
-                          ToolTip="Format: (Result count : File count)"
-                          IsChecked="{Binding ShowResultFileCount}" />
+                          IsChecked="{Binding ShowResultFileCount}"
+                          ToolTip="Format: (Result count : File count)" />
                 <CheckBox Content="Load last searches"
                           IsChecked="{Binding LoadLastSearches}" />
 
@@ -204,6 +289,8 @@
 
             <TreeViewItem DataContext="{Binding General}"
                           Header="General" />
+            <TreeViewItem DataContext="{Binding Index}"
+                          Header="Index" />
             <TreeViewItem DataContext="{Binding UserInterface}"
                           Header="UI" />
             <TreeViewItem DataContext="{Binding Search}"
@@ -231,7 +318,6 @@
                           Background="#828790" />
         </Grid>
 
-        <!--  Buttons Grid  -->
         <Grid Grid.Row="2"
               Grid.ColumnSpan="3"
               HorizontalAlignment="Stretch">

@@ -15,20 +15,35 @@ namespace CodeIDX.ViewModels.Commands
 
         protected override void Execute(SearchResultViewModel contextViewModel)
         {
-            string file = contextViewModel.GetFilePath();
+            OpenInNotepad(contextViewModel.GetFilePath(), contextViewModel.LineNumber);
+        }
+
+        public static bool OpenInNotepad(string file, int line)
+        {
             try
             {
+                string extension = Path.GetExtension(file);
+
                 //try to open notepad and go to matching line
-                string arguments = string.Format("\"{0}\" -n{1}", file, contextViewModel.LineNumber);
+                string arguments = string.Format("\"{0}\" -n{1}", file, line);
                 //notepad++ doesn't support xaml highlighting, xml does the trick
-                if (contextViewModel.Extension == ".xaml")
+                if (extension == ".xaml")
                     arguments += " -lxml";
 
                 Process.Start("notepad++.exe", arguments);
+                return true;
             }
             catch
             {
-                Process.Start("notepad.exe", file);
+                try
+                {
+                    Process.Start("notepad.exe", file);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
             }
         }
     }

@@ -16,6 +16,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.ComponentModel;
+using CodeIDX.Settings;
+using System.Collections.Concurrent;
 
 namespace CodeIDX.Services.Lucene
 {
@@ -127,14 +129,20 @@ namespace CodeIDX.Services.Lucene
             Instance = new LuceneSearcher();
         }
 
+        /// <summary>
+        /// TODO refactor
+        /// </summary>
         public IEnumerable<SearchResultViewModel> Search(IndexViewModel indexDirectory,
             string searchString,
             bool matchCase,
             bool matchWholeWord,
             bool useWildcards,
+            out Task<IEnumerable<SearchResultViewModel>> ongoingSearchTask,
             CancellationToken cancelToken,
             IEnumerable<string> fileFilters = null)
         {
+            ongoingSearchTask = null;
+
             if (!LuceneHelper.IsValidIndexDirectory(indexDirectory.IndexDirectory) || string.IsNullOrWhiteSpace(searchString))
                 return Enumerable.Empty<SearchResultViewModel>();
 
@@ -146,11 +154,6 @@ namespace CodeIDX.Services.Lucene
                 using (var reader = IndexReader.Open(FSDirectory.Open(indexDirectory.IndexDirectory), true))
                 using (var searcher = new IndexSearcher(reader))
                 {
-                    //TODO use paging?
-                    var resultCollector = TopScoreDocCollector.Create(searcher.MaxDoc, false);
-
-                    //string expandedSearchString = LuceneHelper.ExpandTokenBreak(searchString);
-
                     BooleanQuery resultQuery = new BooleanQuery();
                     if (matchWholeWord)
                         resultQuery.Add(new BooleanClause(BuildMatchWholeWordContentQuery(searchString, matchCase, useWildcards), Occur.MUST));
@@ -166,6 +169,7 @@ namespace CodeIDX.Services.Lucene
                     //    foreach (var query in BuildFileFilterQueries(fileFilters))
                     //        resultQuery.Add(new BooleanClause(query, Occur.MUST));
                     //}
+
                     //Add blacklist query
                     var blacklist = Settings.CodeIDXSettings.Blacklist.BlacklistDirectories;
                     if (ApplicationView.UserSettings.IsBlacklistEnabled)
@@ -174,17 +178,28 @@ namespace CodeIDX.Services.Lucene
                             resultQuery.Add(curClause);
                     }
 
-                    searcher.Search(resultQuery, resultCollector);
+                    Sort sort = new Sort(new SortField[]
+                    {
+                        new SortField(Constants.IndexFields.Directory, SortField.STRING),
+                        new SortField(Constants.IndexFields.Filename, SortField.STRING),
+                        new SortField(Constants.IndexFields.Extension, SortField.STRING)
+                    });
+
+                    TopFieldDocs resultCollector = searcher.Search(resultQuery, null, Int32.MaxValue, sort);
 
                     string adjustedSearchString = matchCase ? searchString : searchString.ToLower();
                     IEnumerable<string> patternParts = null;
                     if (useWildcards)
                         patternParts = GetWildcardPatternParts(adjustedSearchString);
 
-                    foreach (var match in resultCollector.TopDocs().ScoreDocs)
+                    //kein Parallel.Foreach verwenden!
+                    //durch die grosse Anzahl der Threads die erstellt und verworfen werden ist die Performance sehr schlecht!
+
+                    int lastMatchIndex = 0;
+                    foreach (var match in resultCollector.ScoreDocs)
                     {
                         if (cancelToken.IsCancellationRequested)
-                            return Enumerable.Empty<SearchResultViewModel>();
+                            return results;
 
                         var curDoc = reader.Document(match.Doc);
                         string docDirectory = curDoc.Get(Constants.IndexFields.Directory);
@@ -213,22 +228,84 @@ namespace CodeIDX.Services.Lucene
 
                             isFirst = false;
                         }
+
+                        if (results.Count >= CodeIDXSettings.Search.PageSize)
+                        {
+                            var docNumbers = resultCollector.ScoreDocs.Select(cur => cur.Doc).ToList();
+                            ongoingSearchTask = Task.Run<IEnumerable<SearchResultViewModel>>(() => GetRemainingLazyDocuments(indexDirectory,
+                                                                                                                           docNumbers,
+                                                                                                                           lastMatchIndex,
+                                                                                                                           adjustedSearchString,
+                                                                                                                           patternParts,
+                                                                                                                           matchCase,
+                                                                                                                           matchWholeWord,
+                                                                                                                           cancelToken,
+                                                                                                                           fileFilters));
+
+                            return results;
+                        }
+
+                        lastMatchIndex++;
                     }
                 }
             }
+            catch { }
             finally
             {
-                IsSearching = false;
+                if (ongoingSearchTask == null)
+                    IsSearching = false;
             }
 
             return results;
         }
 
+        private IEnumerable<SearchResultViewModel> GetRemainingLazyDocuments(IndexViewModel indexDirectory,
+            IEnumerable<int> documentNumbers,
+            int lastMatchIndex,
+            string adjustedSearchString,
+            IEnumerable<string> patternParts,
+            bool matchCase,
+            bool matchWholeWord,
+            CancellationToken cancelToken,
+            IEnumerable<string> fileFilters = null)
+        {
+            try
+            {
+                List<SearchResultViewModel> results = new List<SearchResultViewModel>();
+                using (var subReader = IndexReader.Open(FSDirectory.Open(indexDirectory.IndexDirectory), true))
+                {
+                    for (int i = lastMatchIndex + 1; i < documentNumbers.Count(); i++)
+                    {
+                        if (cancelToken.IsCancellationRequested)
+                            return results;
+
+                        var subCurDoc = subReader.Document(documentNumbers.ElementAtOrDefault(i));
+                        string subDocDirectory = subCurDoc.Get(Constants.IndexFields.Directory);
+                        string subDocFilename = subCurDoc.Get(Constants.IndexFields.Filename);
+                        string subDocExtension = subCurDoc.Get(Constants.IndexFields.Extension);
+                        string subDocumentFilename = Path.Combine(subDocDirectory, subDocFilename) + subDocExtension;
+                        if (fileFilters != null && !fileFilters.Contains(subDocumentFilename))
+                            continue;
+
+                        IEnumerable<LineMatch> subMatchingLines = GetMatchingLines(new GetMatchingLinesArgs(subDocumentFilename, adjustedSearchString, patternParts, matchCase, matchWholeWord));
+                        foreach (var lineMatch in subMatchingLines)
+                        {
+                            results.Add(new SearchResultViewModel(false, subDocDirectory, subDocFilename, subDocExtension, lineMatch.LineNumber, lineMatch.Line, lineMatch.Highlights));
+                        }
+                    }
+
+                }
+
+                return results;
+            }
+            finally
+            {
+                IsSearching = false;
+            }
+        }
+
         private IEnumerable<LineMatch> GetMatchingLines(GetMatchingLinesArgs args)
         {
-            //TODO improve performance!
-            //getting matching lines takes the most time
-
             if (!File.Exists(args.File))
                 return Enumerable.Empty<LineMatch>();
 
@@ -300,7 +377,7 @@ namespace CodeIDX.Services.Lucene
 
                         curMatch.AddPartMatch(new HighlightInfo(curPartStartIndex, curPart.Length));
                         lastPartEndIndex = curPartStartIndex + curPart.Length;
-                        }
+                    }
 
                     if (curPartStartIndex != -1)
                     {

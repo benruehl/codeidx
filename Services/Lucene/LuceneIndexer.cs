@@ -17,6 +17,8 @@ using System.Threading;
 using System.ComponentModel;
 using Lucene.Net.QueryParsers;
 using System.Diagnostics;
+using CodeIDX.Settings;
+using System.Windows;
 
 namespace CodeIDX.Services.Lucene
 {
@@ -85,6 +87,10 @@ namespace CodeIDX.Services.Lucene
                     indexWriter.Optimize();
                 }
             }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("UpdateDocument Exception " + e.ToString());
+            }
             finally
             {
                 IsIndexing = false;
@@ -93,7 +99,14 @@ namespace CodeIDX.Services.Lucene
 
         private IndexWriter InitIndexWriter(FSDirectory indexDirectory)
         {
-            return new IndexWriter(indexDirectory, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+            try
+            {
+                return new IndexWriter(indexDirectory, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private IEnumerable<string> GetAllFiles(IEnumerable<string> directoriesToIndex, IEnumerable<string> fileFilter)
@@ -133,7 +146,7 @@ namespace CodeIDX.Services.Lucene
                 });
             }
 
-            return filteredFiles;
+            return filteredFiles.ToList();
         }
 
         private bool IsValidFile(string file, List<string> fileFilter)
@@ -183,13 +196,16 @@ namespace CodeIDX.Services.Lucene
             return doc;
         }
 
-        public void UpdateIndexDirectory(IndexViewModel index, CancellationToken cancelToken)
+        public async void UpdateIndexDirectoryInBackground(IndexViewModel index, CancellationToken cancelToken)
         {
             if (IsIndexing)
                 return;
 
-            List<string> filesToUpdate = new List<string>();
-            List<int> deletedDocuments = new List<int>();
+            ConcurrentBag<string> filesToUpdate = new ConcurrentBag<string>();
+            ConcurrentBag<int> deletedDocuments = new ConcurrentBag<int>();
+
+            string tempIndexDirectoryPath = string.Empty;
+            Guid writingOPid = Guid.Empty;
 
             IsIndexing = true;
             try
@@ -253,8 +269,12 @@ namespace CodeIDX.Services.Lucene
                             return;
                     }
 
-                    if (filesToUpdate.Count > 0)
+                    if (filesToUpdate.Any())
                     {
+                        //wait until the operation can be executed (a search might be in progress)
+                        while (!ApplicationService.ApplicationView.BeginOperation(StatusKind.Writing, out writingOPid))
+                            await Task.Delay(500);
+
                         using (var writer = InitIndexWriter(indexDirectory))
                         {
                             foreach (var file in filesToUpdate)
@@ -265,13 +285,25 @@ namespace CodeIDX.Services.Lucene
                                 writer.AddDocument(BuildDocument(file));
                             }
 
-                            writer.Optimize();
-                        }
+                            if (!Settings.CodeIDXSettings.Index.DisableOptimizeIndex)
+                                writer.Optimize();
+                        };
                     }
                 }
             }
+            catch (Exception e)
+            {
+                ErrorProvider.Instance.LogError("UpdateDocument Exception " + e.ToString());
+            }
             finally
             {
+                //ApplicationService.ApplicationView.ResetOngoingOperations();
+                if (ApplicationService.ApplicationView.Status == StatusKind.Writing)
+                    ApplicationService.ApplicationView.EndOperation(writingOPid);
+
+                if (System.IO.Directory.Exists(tempIndexDirectoryPath))
+                    System.IO.Directory.Delete(tempIndexDirectoryPath, true);
+
                 IsIndexing = false;
             }
         }
@@ -369,49 +401,60 @@ namespace CodeIDX.Services.Lucene
             }
         }
 
-        public void AddDocumentDirectory(string newDirectory, IndexViewModel index)
+        public async void AddDocumentDirectory(string newDirectory, IndexViewModel index)
         {
             if (string.IsNullOrEmpty(newDirectory) || !System.IO.Directory.Exists(newDirectory))
                 return;
 
+            Guid writingOPid = Guid.Empty;
             try
             {
+                while (!ApplicationService.ApplicationView.BeginOperation(StatusKind.Writing, out writingOPid))
+                    await Task.Delay(500);
+
                 using (var indexDirectory = FSDirectory.Open(index.IndexDirectory))
                 using (var writer = InitIndexWriter(indexDirectory))
                 {
                     var filteredFiles = FilterFiles(System.IO.Directory.EnumerateFiles(newDirectory, "*.*", SearchOption.AllDirectories), index.FileFilters);
                     foreach (var newFile in filteredFiles)
-                    {
                         writer.AddDocument(BuildDocument(newFile));
-                        writer.Optimize();
-                    }
                 }
             }
             catch (Exception e)
             {
                 ErrorProvider.Instance.LogError("AddDocumentDirectory Exception " + e.ToString());
             }
+            finally
+            {
+                ApplicationService.ApplicationView.EndOperation(writingOPid);
+            }
         }
 
-        public void AddDocument(string newFile, IndexViewModel index)
+        public async void AddDocument(string newFile, IndexViewModel index)
         {
             if (string.IsNullOrEmpty(newFile) || !File.Exists(newFile) || !IsValidFile(newFile, index.FileFilters))
                 return;
 
             ErrorProvider.Instance.LogInfo("AddDocument " + newFile);
-
+            Guid writingOPid = Guid.Empty;
             try
             {
+                while (!ApplicationService.ApplicationView.BeginOperation(StatusKind.Writing, out writingOPid))
+                    await Task.Delay(500);
+
                 using (var indexDirectory = FSDirectory.Open(index.IndexDirectory))
                 using (var writer = InitIndexWriter(indexDirectory))
                 {
                     writer.AddDocument(BuildDocument(newFile));
-                    writer.Optimize();
                 }
             }
             catch (Exception e)
             {
                 ErrorProvider.Instance.LogError("AddDocument Exception " + e.ToString());
+            }
+            finally
+            {
+                ApplicationService.ApplicationView.EndOperation(writingOPid);
             }
         }
 
@@ -468,6 +511,35 @@ namespace CodeIDX.Services.Lucene
 
         }
 
+        internal void OptimizeIndex(IndexViewModel index)
+        {
+            if (index == null)
+            {
+                MessageBox.Show("No index loaded.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Guid writingOPid;
+            if (!ApplicationService.ApplicationView.BeginOperation(StatusKind.Optimizing, out writingOPid))
+            {
+                MessageBox.Show("Operation in progress. Try again later.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                using (var indexDirectory = FSDirectory.Open(index.IndexDirectory))
+                using (var writer = InitIndexWriter(indexDirectory))
+                {
+                    writer.Optimize();
+                }
+            }
+            catch { }
+            finally
+            {
+                ApplicationService.ApplicationView.EndOperation(writingOPid);
+            }
+        }
     }
 
 }

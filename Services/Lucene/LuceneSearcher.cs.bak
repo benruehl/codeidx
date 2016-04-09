@@ -1,5 +1,5 @@
-using CodeIDX.Helpers;
-using CodeIDX.ViewModels;
+using FileIndexer.Helpers;
+using FileIndexer.ViewModels;
 using Lucene.Net.Analysis;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers;
@@ -14,115 +14,20 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using System.ComponentModel;
-using CodeIDX.Services.Lucene.Wildcards;
 
-namespace CodeIDX.Services.Lucene
+namespace FileIndexer.LuceneServices
 {
-    public class LuceneSearcher : INotifyPropertyChanged
+    public class LuceneSearcher
     {
 
-        private class GetMatchingLinesArgs
-        {
-            private string _File;
-            private string _SearchString;
-            private bool _MatchCase;
-            private bool _MatchWholeWord;
-            private bool _UseWildcards;
-            private List<IWildcardQueryPart> _WildcardQueryParts;
-
-            /// <summary>
-            /// Summary for GetMatchingLinesArgs
-            /// </summary>
-            public GetMatchingLinesArgs(string file, string searchString, IEnumerable<IWildcardQueryPart> wildpartQueryParts, bool matchCase, bool matchWholeWord)
-            {
-                _File = file;
-                _SearchString = searchString;
-                _MatchCase = matchCase;
-                _MatchWholeWord = matchWholeWord;
-
-                if (wildpartQueryParts != null)
-                    _WildcardQueryParts = wildpartQueryParts.ToList();
-            }
-
-            public List<IWildcardQueryPart> WildcardQueryParts
-            {
-                get
-                {
-                    return _WildcardQueryParts;
-                }
-
-            }
-            public bool UseWildcards
-            {
-                get
-                {
-                    return _WildcardQueryParts != null;
-                }
-            }
-            public string File
-            {
-                get
-                {
-                    return _File;
-                }
-            }
-            public string SearchString
-            {
-                get
-                {
-                    return _SearchString;
-                }
-            }
-            public bool MatchCase
-            {
-                get
-                {
-                    return _MatchCase;
-                }
-            }
-            public bool MatchWholeWord
-            {
-                get
-                {
-                    return _MatchWholeWord;
-                }
-            }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
         public static LuceneSearcher Instance { get; private set; }
-
-        private WildcardManager WildcardManager { get; set; }
-
-        private bool _IsSearching;
-        public bool IsSearching
-        {
-            get
-            {
-                return _IsSearching;
-            }
-            private set
-            {
-                _IsSearching = value;
-                FirePropertyChanged("IsSearching");
-            }
-        }
 
         private static ApplicationViewModel ApplicationView
         {
             get
             {
-                return ApplicationService.ApplicationView;
+                return ApplicationViewModel.Instance;
             }
-        }
-
-        private void FirePropertyChanged(string property)
-        {
-            if (PropertyChanged != null)
-                PropertyChanged(this, new PropertyChangedEventArgs(property));
         }
 
         static LuceneSearcher()
@@ -130,133 +35,84 @@ namespace CodeIDX.Services.Lucene
             Instance = new LuceneSearcher();
         }
 
-        private LuceneSearcher()
-        {
-            WildcardManager = new WildcardManager();
-        }
-
-        public IEnumerable<SearchResultViewModel> Search(IndexViewModel indexDirectory,
-            string searchString,
-            bool matchCase,
-            bool matchWholeWord,
-            bool useWildcards,
-            CancellationToken cancelToken,
-            IEnumerable<string> fileFilters = null)
+        public async Task<IEnumerable<SearchResultViewModel>> Search(IndexViewModel indexDirectory, string searchString)
         {
             if (!LuceneHelper.IsValidIndexDirectory(indexDirectory.IndexDirectory) || string.IsNullOrWhiteSpace(searchString))
                 return Enumerable.Empty<SearchResultViewModel>();
 
             List<SearchResultViewModel> results = new List<SearchResultViewModel>();
-            IsSearching = true;
 
-            try
+            using (var reader = IndexReader.Open(FSDirectory.Open(indexDirectory.IndexDirectory), true))
+            using (var searcher = new IndexSearcher(reader))
             {
-                using (var reader = IndexReader.Open(FSDirectory.Open(indexDirectory.IndexDirectory), true))
-                using (var searcher = new IndexSearcher(reader))
+                //TODO use paging
+                var resultCollector = TopScoreDocCollector.Create(searcher.MaxDoc, false);
+
+                bool matchCase = ApplicationView.Settings.MatchCase;
+                bool matchWholeWord = ApplicationView.Settings.MatchWholeWord;
+
+                Query query = null;
+                string expandedSearchString = LuceneHelper.ExpandTokenBreak(searchString);
+
+                if (matchWholeWord)
+                    query = BuildMatchWholeWordQuery(expandedSearchString, matchCase);
+                else
+                    query = BuildMatchAnywhereQuery(reader, expandedSearchString, searchString, matchCase);
+
+                searcher.Search(query, resultCollector);
+                //TODO search in matches async
+                foreach (var match in resultCollector.TopDocs().ScoreDocs)
                 {
-                    //TODO use paging?
-                    var resultCollector = TopScoreDocCollector.Create(searcher.MaxDoc, false);
+                    var curDoc = reader.Document(match.Doc);
 
-                    //string expandedSearchString = LuceneHelper.ExpandTokenBreak(searchString);
+                    string docDirectory = curDoc.Get(Constants.IndexFields.Directory);
+                    string docFilename = curDoc.Get(Constants.IndexFields.Filename);
+                    string docExtension = curDoc.Get(Constants.IndexFields.Extension);
 
-                    BooleanQuery resultQuery = new BooleanQuery();
-                    if (matchWholeWord)
-                        resultQuery.Add(new BooleanClause(BuildMatchWholeWordContentQuery(searchString, matchCase, useWildcards), Occur.MUST));
-                    else
-                        resultQuery.Add(new BooleanClause(BuildMatchAnywhereQuery(reader, searchString, matchCase, useWildcards), Occur.MUST));
+                    string documentFilename = Path.Combine(docDirectory, docFilename) + docExtension;
+                    var matchingLines = await GetMatchingLines(documentFilename, searchString, matchCase, matchWholeWord);
 
-                    //TODO use this instead of manual filter.
-                    //Doesn't work now because recursive booleanQuery doesn't work and can't say to match one of following filters.
-
-                    //Add fileFilter query
-                    //if (fileFilters != null && fileFilters.Any())
-                    //{
-                    //    foreach (var query in BuildFileFilterQueries(fileFilters))
-                    //        resultQuery.Add(new BooleanClause(query, Occur.MUST));
-                    //}
-                    //Add blacklist query
-                    var blacklist = Settings.CodeIDXSettings.Blacklist.BlacklistDirectories;
-                    if (ApplicationView.UserSettings.IsBlacklistEnabled)
+                    foreach (var lineMatch in matchingLines)
                     {
-                        foreach (var curClause in BuildBlacklistQueryClauses(blacklist))
-                            resultQuery.Add(curClause);
-                    }
-
-                    searcher.Search(resultQuery, resultCollector);
-
-                    string adjustedSearchString = matchCase ? searchString : searchString.ToLower();
-                    IEnumerable<IWildcardQueryPart> patternParts = null;
-                    if (useWildcards)
-                        patternParts = WildcardManager.SplitParts(adjustedSearchString);
-
-                    foreach (var match in resultCollector.TopDocs().ScoreDocs)
-                    {
-                        if (cancelToken.IsCancellationRequested)
-                            return Enumerable.Empty<SearchResultViewModel>();
-
-                        var curDoc = reader.Document(match.Doc);
-                        string docDirectory = curDoc.Get(Constants.IndexFields.Directory);
-                        string docFilename = curDoc.Get(Constants.IndexFields.Filename);
-                        string docExtension = curDoc.Get(Constants.IndexFields.Extension);
-                        string documentFilename = Path.Combine(docDirectory, docFilename) + docExtension;
-
-                        //Temp filetype filter
-                        if (fileFilters != null && !fileFilters.Contains(documentFilename))
-                            continue;
-
-                        IEnumerable<LineMatch> matchingLines = GetMatchingLines(new GetMatchingLinesArgs(documentFilename, adjustedSearchString, patternParts, matchCase, matchWholeWord));
-
-                        bool isFirst = true;
-                        foreach (var lineMatch in matchingLines)
+                        results.Add(new SearchResultViewModel
                         {
-                            results.Add(new SearchResultViewModel
-                            (
-                                isFirst,
-                                docDirectory,
-                                docFilename,
-                                docExtension,
-                                lineMatch.LineNumber,
-                                lineMatch.Line,
-                                lineMatch.Highlights
-                            ));
-
-                            isFirst = false;
-                        }
+                            Directory = docDirectory,
+                            Filename = docFilename,
+                            Extension = docExtension,
+                            MatchingLine = lineMatch.Line,
+                            LineNumber = lineMatch.LineNumber
+                        });
                     }
                 }
-            }
-            finally
-            {
-                IsSearching = false;
             }
 
             return results;
         }
 
-        private IEnumerable<LineMatch> GetMatchingLines(GetMatchingLinesArgs args)
+        private async Task<IEnumerable<LineMatch>> GetMatchingLines(string file, string searchString, bool matchCase, bool matchWholeWord)
         {
             //TODO improve performance!
             //getting matching lines takes the most time
 
-            if (!File.Exists(args.File))
-                return Enumerable.Empty<LineMatch>();
+            if (!File.Exists(file))
+                return null;
 
+            string adjustedSearchString = matchCase ? searchString : searchString.ToLower();
             List<LineMatch> matchingLines = new List<LineMatch>();
 
-            using (FileStream fs = new FileStream(args.File, FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
             using (StreamReader reader = new StreamReader(fs))
             {
                 string curLine;
                 int lineNumber = 1;
-                while ((curLine = reader.ReadLine()) != null)
+                while ((curLine = await reader.ReadLineAsync()) != null)
                 {
-                    IEnumerable<HighlightInfo> lineHighlights = GetLineHighlights(curLine, args);
-                    if (lineHighlights.Any())
+                    string highlightedLine = await HighlightMatches(curLine, adjustedSearchString, matchCase, matchWholeWord);
+                    if (!string.IsNullOrEmpty(highlightedLine))
                     {
                         matchingLines.Add(new LineMatch
                         {
-                            Highlights = lineHighlights,
-                            Line = curLine,
+                            Line = highlightedLine,
                             LineNumber = lineNumber
                         });
                     }
@@ -268,132 +124,84 @@ namespace CodeIDX.Services.Lucene
             return matchingLines;
         }
 
-        private bool GetIsValidWholeWordMatch(GetMatchingLinesArgs args, string adjustedSearchLine, HighlightInfo match)
+        private async Task<string> HighlightMatches(string line, string searchString, bool matchCase, bool matchWholeWord)
         {
-            bool previousCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(args.SearchString.FirstOrDefault());
-            char previousCharacter = adjustedSearchLine.ElementAtOrDefault(match.StartIndex - 1);
+            bool validMatchFound = false;
+            string adjustedSearchLine = matchCase ? line : line.ToLower();
 
-            bool nextCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(args.SearchString.LastOrDefault());
-            char nextCharacter = adjustedSearchLine.ElementAtOrDefault(match.EndIndex);
+            var highlightedLine = line;
+            var matches = GetStringMatches(adjustedSearchLine, searchString).OrderByDescending(cur => cur.EndIndex).ToList();
 
-            bool isValidWholeWordMatch = (!previousCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(previousCharacter)) &&
-                (!nextCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(nextCharacter));
+            //List<Task> highlightMatchesTasks = new List<Task>();
+            //foreach (var match in matches)
+            var highlightMatchesTasks = matches.Select(match =>
+          {
+              new Task(() =>
+                  {
+                      if (matchWholeWord)
+                      {
+                          bool previousCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(searchString.FirstOrDefault());
+                          char previousCharacter = adjustedSearchLine.ElementAtOrDefault(match.StartIndex - 1);
 
-            return isValidWholeWordMatch;
+                          bool nextCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(searchString.LastOrDefault());
+                          char nextCharacter = adjustedSearchLine.ElementAtOrDefault(match.EndIndex);
+
+                          bool isValidWholeWordMatch = (!previousCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(previousCharacter)) &&
+                              (!nextCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(nextCharacter));
+
+                          if (!isValidWholeWordMatch)
+                              return;
+                      }
+
+                      highlightedLine = highlightedLine.Insert(match.EndIndex, Constants.SearchResultHighlightEndTag);
+                      highlightedLine = highlightedLine.Insert(match.StartIndex, Constants.SearchResultHighlightStartTag);
+
+                      validMatchFound = true;
+                  });
+          });
+
+            await Task.WhenAll(highlightMatchesTasks);
+            return validMatchFound ? highlightedLine : string.Empty;
         }
 
-        private IEnumerable<HighlightInfo> GetLineHighlights(string line, GetMatchingLinesArgs args)
+        private bool IsValidWholeWordMatch(string line, string searchString)
         {
-            string adjustedSearchLine = args.MatchCase ? line : line.ToLower();
+            foreach (var match in GetStringMatches(line, searchString))
+            {
+                bool previousCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(searchString.FirstOrDefault());
+                char previousCharacter = line.ElementAtOrDefault(match.StartIndex - 1);
 
+                bool nextCharacterMatters = !LuceneHelper.IsValidTokenBreakCharactor(searchString.LastOrDefault());
+                char nextCharacter = line.ElementAtOrDefault(match.EndIndex);
+
+                if ((!previousCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(previousCharacter)) &&
+                    (!nextCharacterMatters || LuceneHelper.IsValidTokenBreakCharactor(nextCharacter)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private IEnumerable<StringMatch> GetStringMatches(string line, string pattern)
+        {
             int lastMatchEndIndex = 0;
             int curMatchStartIndex;
-
-            List<HighlightInfo> results = new List<HighlightInfo>();
-            if (args.UseWildcards)
+            while ((curMatchStartIndex = line.IndexOf(pattern, lastMatchEndIndex, StringComparison.Ordinal)) != -1)
             {
-                int curPartStartIndex = 0;
-                int lastPartEndIndex = 0;
-                while (curPartStartIndex != -1)
+                lastMatchEndIndex = curMatchStartIndex + pattern.Length;
+                yield return new StringMatch
                 {
-                    WildcardHighlightInfo curMatch = new WildcardHighlightInfo();
-                    int partIndex = 0;
-                    // look for all parts
-                    foreach (var curPart in args.WildcardQueryParts)
-                    {
-                        if (curPart is WildcardPart)
-                        {
-                            var prevPart = args.WildcardQueryParts.ElementAtOrDefault(partIndex - 1);
-                            var nextPart = args.WildcardQueryParts.ElementAtOrDefault(partIndex + 1);
-
-                            int start;
-                            int end;
-                            if (((WildcardPart)curPart).IsMatch(adjustedSearchLine.Substring(lastPartEndIndex), prevPart, nextPart, out start, out end))
-                            {
-                            }
-                        }
-
-                        //curPartStartIndex = adjustedSearchLine.IndexOf(curPart, lastPartEndIndex, StringComparison.Ordinal);
-                        //if (curPartStartIndex == -1)
-                        //    break;
-
-                        //curMatch.AddPartMatch(new HighlightInfo(curPartStartIndex, curPart.Length));
-                        //lastPartEndIndex = curPartStartIndex + curPart.Length;
-
-                        partIndex++;
-                    }
-
-                    //if (curPartStartIndex != -1)
-                    //{
-                    //    curMatch.StartIndex = adjustedSearchLine.IndexOf(args.WildcardQueryParts.First(), lastMatchEndIndex, StringComparison.Ordinal);
-                    //    curMatch.EndIndex = curPartStartIndex + args.WildcardQueryParts.Last().Length;
-
-                    //    results.Add(curMatch);
-                    //    lastMatchEndIndex = curMatch.EndIndex;
-                    //}
-                }
+                    StartIndex = curMatchStartIndex,
+                    EndIndex = lastMatchEndIndex
+                };
             }
-            else
-            {
-                while ((curMatchStartIndex = adjustedSearchLine.IndexOf(args.SearchString, lastMatchEndIndex, StringComparison.Ordinal)) != -1)
-                {
-                    lastMatchEndIndex = curMatchStartIndex + args.SearchString.Length;
-                    results.Add(new HighlightInfo(curMatchStartIndex, lastMatchEndIndex - curMatchStartIndex));
-                }
-            }
-
-            if (args.MatchWholeWord)
-            {
-                return results.Where(match =>
-                    {
-                        if (match is WildcardHighlightInfo)
-                        {
-                            //check matchWholeWord for every wildcard query part
-                            return ((WildcardHighlightInfo)match).PartHighlights.All(partMatch => GetIsValidWholeWordMatch(args, adjustedSearchLine, partMatch));
-                        }
-                        else
-                        {
-                            return GetIsValidWholeWordMatch(args, adjustedSearchLine, match);
-                        }
-                    });
-            }
-
-            return results;
         }
 
-        private IEnumerable<BooleanClause> BuildBlacklistQueryClauses(IEnumerable<string> blacklist)
+        private Query BuildMatchWholeWordQuery(string searchString, bool matchCase)
         {
-            if (blacklist == null || !blacklist.Any())
-                return Enumerable.Empty<BooleanClause>();
-
-            List<BooleanClause> clauses = new List<BooleanClause>();
-            foreach (var cur in blacklist)
-            {
-                string adjustedString = LuceneHelper.ExpandTokenBreak(cur.ToLower()).TrimEnd(Path.DirectorySeparatorChar);
-                clauses.Add(new BooleanClause(BuildMatchWholeWordQuery(Constants.IndexFields.AnalizedDirectory, adjustedString), Occur.MUST_NOT));
-            }
-
-            return clauses;
-        }
-
-        private Query BuildMatchWholeWordContentQuery(string searchString, bool matchCase, bool useWildcards)
-        {
-            if (useWildcards)
-            {
-                BooleanQuery resultQuery = new BooleanQuery();
-                var patternParts = WildcardManager.SplitParts(searchString);
-
-                foreach (var part in patternParts.OfType<TextPart>())
-                    resultQuery.Add(BuildMatchWholeWordContentQuery(LuceneHelper.ExpandTokenBreak(part.Text), matchCase), Occur.MUST);
-
-                return resultQuery;
-            }
-            else
-                return BuildMatchWholeWordContentQuery(LuceneHelper.ExpandTokenBreak(searchString), matchCase);
-        }
-
-        private Query BuildMatchWholeWordContentQuery(string searchString, bool matchCase)
-        {
+            List<string> searchTerms = null;
             string adjustedSearchString = searchString;
             string fieldToSearch = Constants.IndexFields.Content;
 
@@ -403,60 +211,49 @@ namespace CodeIDX.Services.Lucene
                 adjustedSearchString = adjustedSearchString.ToLower();
             }
 
-            return BuildMatchWholeWordQuery(fieldToSearch, adjustedSearchString);
-        }
+            searchTerms = adjustedSearchString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-        private static Query BuildMatchWholeWordQuery(string fieldToSearch, string searchString)
-        {
-            var searchTerms = searchString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
+            // build content query
             PhraseQuery contentQuery = new PhraseQuery();
             foreach (var curTerm in searchTerms)
                 contentQuery.Add(new Term(fieldToSearch, curTerm));
 
-            return contentQuery;
+            BooleanQuery resultQuery = new BooleanQuery();
+            resultQuery.Add(contentQuery, Occur.MUST);
+
+            var fileTypeQuery = BuildFileTypeFilter();
+            if (fileTypeQuery != null)
+                resultQuery.Add(fileTypeQuery, Occur.MUST);
+
+            return resultQuery;
         }
 
-        private IEnumerable<Query> BuildFileFilterQueries(IEnumerable<string> files)
+        private Query BuildFileTypeFilter()
         {
-            List<Query> resultQueries = new List<Query>();
-            foreach (var file in files)
+            bool allFiltersActive = ApplicationView.ActiveFileFilters.All(cur => cur.IsActive);
+            bool noFiltersActive = ApplicationView.ActiveFileFilters.All(cur => !cur.IsActive);
+            if (!allFiltersActive && !noFiltersActive)
             {
-                BooleanQuery boolQuery = new BooleanQuery();
-                if (string.IsNullOrEmpty(file))
-                    continue;
+                //append file filter query
+                BooleanQuery fileFilterQuery = new BooleanQuery
+                {
+                    // at least one filter must apply
+                    MinimumNumberShouldMatch = 1
+                };
 
-                string directory = Path.GetDirectoryName(file);
-                string filename = Path.GetFileNameWithoutExtension(file);
-                string extension = Path.GetExtension(file);
+                foreach (var filter in ApplicationView.ActiveFileFilters.Where(cur => cur.IsActive))
+                {
+                    TermQuery filterQuery = new TermQuery(new Term(Constants.IndexFields.Extension, filter.Filter.Trim('*')));
+                    fileFilterQuery.Add(filterQuery, Occur.SHOULD);
+                }
 
-                boolQuery.Add(new BooleanClause(new TermQuery(new Term(Constants.IndexFields.Directory, directory)), Occur.MUST));
-                boolQuery.Add(new BooleanClause(new TermQuery(new Term(Constants.IndexFields.Filename, filename)), Occur.MUST));
-                boolQuery.Add(new BooleanClause(new TermQuery(new Term(Constants.IndexFields.Extension, extension)), Occur.MUST));
-
-                resultQueries.Add(boolQuery);
+                return fileFilterQuery;
             }
 
-            return resultQueries;
+            return null;
         }
 
-        private Query BuildMatchAnywhereQuery(IndexReader indexReader, string searchString, bool matchCase, bool useWildcards)
-        {
-            if (useWildcards)
-            {
-                BooleanQuery resultQuery = new BooleanQuery();
-                var patternParts = WildcardManager.SplitParts(searchString);
-
-                foreach (var part in patternParts.OfType<TextPart>())
-                    resultQuery.Add(BuildMatchAnywhereQuery(indexReader, LuceneHelper.ExpandTokenBreak(part.Text), matchCase), Occur.MUST);
-
-                return resultQuery;
-            }
-            else
-                return BuildMatchAnywhereQuery(indexReader, LuceneHelper.ExpandTokenBreak(searchString), matchCase);
-        }
-
-        private Query BuildMatchAnywhereQuery(IndexReader indexReader, string expandedSearchString, bool matchCase)
+        private Query BuildMatchAnywhereQuery(IndexReader indexReader, string expandedSearchString, string originalSearchString, bool matchCase)
         {
             List<string> searchTerms = null;
             string adjustedSearchString = expandedSearchString;
@@ -470,29 +267,55 @@ namespace CodeIDX.Services.Lucene
 
             searchTerms = adjustedSearchString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
-            bool onlyOneTerm = searchTerms.Count == 1;
-            var firstTerm = searchTerms.FirstOrDefault();
-            var lastTerm = searchTerms.LastOrDefault();
+            BooleanQuery resultQuery = new BooleanQuery();
+            var fileTypeQuery = BuildFileTypeFilter();
+            if (fileTypeQuery != null)
+                resultQuery.Add(fileTypeQuery, Occur.MUST);
 
-            Query contentQuery = null;
+            bool onlyOneTerm = searchTerms.Count == 1;
             if (onlyOneTerm)
             {
-                bool isFirstTermPunctuation = (firstTerm.Length == 1 && LuceneHelper.IsPunctuation(firstTerm.First()));
-                if (isFirstTermPunctuation)
-                    contentQuery = new TermQuery(new Term(fieldToSearch, firstTerm));
-                else
-                    contentQuery = new WildcardQuery(new Term(fieldToSearch, "*" + firstTerm + "*"));
+                QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_30, fieldToSearch, new KeywordAnalyzer());
+                parser.AllowLeadingWildcard = true;
+
+                var contentQuery = parser.Parse(string.Format("*{0}*", QueryParser.Escape(originalSearchString)));
+                resultQuery.Add(contentQuery, Occur.MUST);
             }
             else
             {
-                MultiPhraseQuery phraseQuery = new MultiPhraseQuery();
+                var firstTerm = searchTerms.FirstOrDefault();
+                var lastTerm = searchTerms.LastOrDefault();
+
+                MultiPhraseQuery query = new MultiPhraseQuery();
 
                 List<Term> firstTermMatches = new List<Term>();
                 List<Term> lastTermMatches = new List<Term>();
-                CollectFirstAndLastTermMatches(indexReader, fieldToSearch, firstTermMatches, lastTermMatches, firstTerm, lastTerm);
+
+                //reader.Terms(new Term(..., ...)) does not work correctly, so check every term!
+                var termEnum = indexReader.Terms();
+
+                while (termEnum.Next())
+                {
+                    var curTerm = termEnum.Term;
+                    //skip wrong fields
+                    if (curTerm.Field != fieldToSearch)
+                        continue;
+
+                    //skip if already collected
+                    if (firstTermMatches.Any(cur => cur.Text == curTerm.Text) ||
+                        lastTermMatches.Any(cur => cur.Text == curTerm.Text))
+                        continue;
+
+                    //TODO not neccessary for punctuation characters
+                    if (curTerm.Text.StartsWith(lastTerm))
+                        lastTermMatches.Add(curTerm);
+
+                    if (curTerm.Text.EndsWith(firstTerm))
+                        firstTermMatches.Add(curTerm);
+                }
 
                 if (firstTermMatches.Count > 0)
-                    phraseQuery.Add(firstTermMatches.ToArray());
+                    query.Add(firstTermMatches.ToArray());
 
                 bool includeFirstTerm = firstTermMatches.Count == 0;
                 bool includeLastTerm = lastTermMatches.Count == 0;
@@ -501,84 +324,20 @@ namespace CodeIDX.Services.Lucene
                 int endIndex = searchTerms.Count - (includeLastTerm ? 0 : 1);
 
                 for (int i = startIndex; i < endIndex; i++)
-                    phraseQuery.Add(new Term(fieldToSearch, searchTerms[i]));
+                    query.Add(new Term(fieldToSearch, searchTerms[i]));
 
                 if (lastTermMatches.Count > 0)
-                    phraseQuery.Add(lastTermMatches.ToArray());
+                    query.Add(lastTermMatches.ToArray());
 
-                contentQuery = phraseQuery;
+                resultQuery.Add(query, Occur.MUST);
             }
 
-            return contentQuery;
+            return resultQuery;
         }
 
-        private static void CollectFirstAndLastTermMatches(
-            IndexReader indexReader,
-            string fieldToSearch,
-            List<Term> firstTermMatches,
-            List<Term> lastTermMatches,
-            string firstTerm,
-            string lastTerm)
+
+        internal IEnumerable<string> GetAvailableFileExtensions(IndexViewModel indexDirectory)
         {
-            bool isFirstTermPunctuation = (firstTerm.Length == 1 && LuceneHelper.IsPunctuation(firstTerm.First()));
-            bool isLastTermPunctuation = (lastTerm.Length == 1 && LuceneHelper.IsPunctuation(lastTerm.First()));
-
-            //punctuation characters are always by themselves, no need to check for terms starting/ending with one!
-            if (isFirstTermPunctuation && isLastTermPunctuation)
-                return;
-
-            // !! reader.Terms(new Term(..., ...)) does not as expected, so check every term !!
-            var termEnum = indexReader.Terms();
-
-            HashSet<string> addedFirstTerms = new HashSet<string>();
-            HashSet<string> addedLastTerms = new HashSet<string>();
-
-            //Use actions for adding first/last terms
-            //This will yield better performance!
-            //Since there are thousands of terms in the index,
-            //performing the string operations for first and last term on all of them,
-            //even though we already know they're not going to match (because punctuations stand alone),
-            //will waste a lot of time!
-            Action<Term> addFirstTermAction = (curTerm) =>
-                {
-                    if (addedFirstTerms.Contains(curTerm.Text) || !curTerm.Text.EndsWith(firstTerm))
-                        return;
-
-                    firstTermMatches.Add(curTerm);
-                    addedFirstTerms.Add(curTerm.Text);
-                };
-
-            Action<Term> addLastTermAction = (curTerm) =>
-            {
-                if (addedLastTerms.Contains(curTerm.Text) || !curTerm.Text.StartsWith(lastTerm))
-                    return;
-
-                lastTermMatches.Add(curTerm);
-                addedLastTerms.Add(curTerm.Text);
-            };
-
-            Action<Term> collectTermsAction = null;
-            if (!isFirstTermPunctuation)
-                collectTermsAction += addFirstTermAction;
-            if (!isLastTermPunctuation)
-                collectTermsAction += addLastTermAction;
-
-            while (termEnum.Next())
-            {
-                var curTerm = termEnum.Term;
-                //skip wrong fields
-                if (curTerm.Field != fieldToSearch)
-                    continue;
-
-                collectTermsAction(curTerm);
-            }
-        }
-
-        internal IEnumerable<string> GetAvailableFileFilters(IndexViewModel indexDirectory)
-        {
-            if (indexDirectory == null)
-                return Enumerable.Empty<string>();
-
             if (!LuceneHelper.IsValidIndexDirectory(indexDirectory.IndexDirectory))
                 return Enumerable.Empty<string>();
 
@@ -599,6 +358,5 @@ namespace CodeIDX.Services.Lucene
 
             return availableExtensions;
         }
-
     }
 }

@@ -1,0 +1,124 @@
+This file summarizes changes in CodeIDX releases.
+
+CodeIDX 2.3 - 2015-06-03
+- option: paging options
+- paging: loading the first few results while searching the remaining files in the background
+- scroll to top when executing new search
+- fixed: scrolling results is performed on all search tabs
+
+CodeIDX 2.2.2 - 2015-05-20
+- index update performance optimized
+- option: disable index optimization
+- fixed: new directories were not automatically recognized by auto updater
+- fixed: refresh causes crash when automatic refresh is in progress
+
+CodeIDX 2.2.1 - 2015-05-10
+- option: open match in custom editor
+
+CodeIDX 2.2 - 2015-05-09
+- option: limit displayed results to 5000 files for better performance
+- option: select default action on result double click (open in Visual Studio, open in Notepad, open with default editor)
+- search while updating the index in the background (only while not writing the changes to the index)
+- prohibit overlapping index location and index sources
+- context menu on search tab for close, close all, close all but this, close right, close left
+- replaced Xceed datagrid with default list view because of regular crash when closing a search tab
+- export only displayed results
+- fixed: show displayed result count in tab header
+
+CodeIDX 2.1.3 - 2015-02-25
+ - mouse back and forward support for executing the previous and next search respectively
+
+CodeIDX 2.1.2 - 2015-01-08
+ - export search results to text file
+
+CodeIDX 2.1.1 - 2014-11-18
+ - fixed: Wildcard search does not work with punctuation characters
+ - fixed: Match whole word does not work
+
+CodeIDX 2.1 - 2014-11-17
+ - wildcard search (only "*" supported for now)
+ - fixed: when selecting last search in search history, running the search will empty the searchtext and not run the search
+ - fixed: opening wrong readme/changelog when not found
+
+CodeIDX 2.0 - 2014-11-10
+ - option: open file in visual studio by default
+ - option: refresh index on startup
+ - option: save and restore last searches (without searching)
+ - option: select match in preview
+ - option: show file count in search tab
+ - option: filter file on ENTER (open file by default)
+ - search history
+ - restore last options page
+ - lock search result files to perform subsequent search in locked files
+ - directory filter
+ - reuse settings of previous version
+ 
+CodeIDX 1.2 - 2014-10-23
+ - edit preview
+ - preview splitter always visible
+ - show/hide preview with double click on splitter
+ - exit finally and skip tray on File.Exit
+ - jung from search to first result on DOWN
+ - CTRL+D to show preview
+ - fixed: options dialog can be opened multiple times from tray
+
+CodeIDX 1.1 - 2014-10-22
+ - options dialog
+	 - launch on startup
+	 - single click tray
+	 - load last index
+	 - enable filter on default
+	 - show in tray
+	 - minimize/exit to tray
+	 - use clipboard on new search
+ - select item on right click
+ - simplify file filter (e.g. ".*" -> "*")
+ - save settings only when changed
+ - remove file from results view on DELETE
+ - filter files results view on ENTER
+ - F5 to perform last search again
+ - search result contextmenu: copy full path
+ - fixed: filter copied to new search but not used
+
+CodeIDX 1.0 - 2014-10-19
+ - focus first textbox in all views
+ - recent indices in file menu
+ - display last search in search tab
+ - log error messages
+ - abort current search
+ - shortcuts (strg+F, strg+N - new Tab)
+ - save last window position
+ - don't open file on double click when alt is pressed
+ - setting to save/load search tabs (just the search text), per index
+ - copy string from matching line
+ - show multiline preview
+ - search in preview
+ - middle click tab to remove it or empty the last tab
+ - improved status
+ - directory tooltip only on directory column
+ - filter file by name
+ - go to line in visual studio
+ - minimize to tray
+ - show last complete refresh date/time in status bar
+ - refresh index async
+ - hold CTRL and click filetype filter to select single filter
+ - hold CTRL+SHIFT and click filetype filter to select all other filters
+ - fixed: allow only single application instance
+ - fixed: check for moved index directory
+ - fixed: can't hide preview after resize
+ - fixed: automatic update indexes all files
+ - fixed: searches for terms like "e.e" take very long
+ - fixed: not responding when searching takes a long time
+ - fixed: "_something" doesn't find results when match whole word is enabled
+ - fixed: "=" not found without match whole word
+ - fixed: when clicking tray and selecting show when window is maximized, window is restored
+
+CodeIDX BETA - 2014-09-14
+ - highlight first occurance of file in results
+ - file menu
+ - refresh index after editing index properties
+ - choose index directory location
+ - (automatic) update index on file changes
+ - filetype filter
+ - concat multiple folders to single index
+ - show status

@@ -14,6 +14,7 @@ namespace CodeIDX.Settings
 
         public static CodeIDXSettings Default { get; private set; }
         public static GeneralSettings General { get; private set; }
+        public static IndexSettings Index { get; private set; }
         public static SearchSettings Search { get; private set; }
         public static ResultsSettings Results { get; private set; }
         public static UserInterfaceSettings UserInterface { get; private set; }
@@ -23,6 +24,7 @@ namespace CodeIDX.Settings
         {
             Default = new CodeIDXSettings();
             General = new GeneralSettings();
+            Index = new IndexSettings();
             Search = new SearchSettings();
             Results = new ResultsSettings();
             UserInterface = new UserInterfaceSettings();
@@ -33,6 +35,7 @@ namespace CodeIDX.Settings
         {
             Default.Save();
             General.Save();
+            Index.Save();
             Search.Save();
             Results.Save();
             UserInterface.Save();
@@ -46,6 +49,7 @@ namespace CodeIDX.Settings
 
             Default.Upgrade();
             General.Upgrade();
+            Index.Upgrade();
             Search.Upgrade();
             Results.Upgrade();
             UserInterface.Upgrade();
@@ -211,5 +215,34 @@ namespace CodeIDX.Settings
             }
         }
 
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastIndexLocationPath
+        {
+            get
+            {
+                return (string)(this["LastIndexLocationPath"]);
+            }
+            set
+            {
+                SetValue("LastIndexLocationPath", value);
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastIndexSourcePath
+        {
+            get
+            {
+                return (string)(this["LastIndexSourcePath"]);
+            }
+            set
+            {
+                SetValue("LastIndexSourcePath", value);
+            }
+        }
     }
 }

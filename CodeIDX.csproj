@@ -58,10 +58,10 @@
     <ApplicationIcon>Views\Resources\Images\code.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>213737A71D848BF74A49B56D43C18E675263D9BD</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>753285716CCAC432819C77F788795FDB44A8D1A5</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>CodeIDX_1_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>CodeIDX_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -175,10 +175,14 @@
     </ApplicationDefinition>
     <Compile Include="MainWindowCommandHandler.cs" />
     <Compile Include="Services\ApplicationService.cs" />
+    <Compile Include="Settings\GeneralSettings.cs" />
+    <Compile Include="ViewModels\Commands\SearchView_LoadAllLazyResultsCommand.cs" />
+    <Compile Include="ViewModels\Commands\SearchView_LoadNextLazyResultsCommand.cs" />
+    <Compile Include="ViewModels\Options\IndexOptionsViewModel.cs" />
     <Compile Include="ViewModels\WildcardHighlightInfo.cs" />
     <Compile Include="Settings\RefreshAtStartupKind.cs" />
     <Compile Include="Settings\CodeIDXSettingsBas.cs" />
-    <Compile Include="Settings\GeneralSettings.cs" />
+    <Compile Include="Settings\IndexSettings.cs" />
     <Compile Include="Settings\BlacklistSettings.cs" />
     <Compile Include="Settings\UserInterfaceSettings.cs" />
     <Compile Include="Settings\SearchSettings.cs" />

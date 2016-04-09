@@ -85,22 +85,6 @@ namespace CodeIDX
         public static readonly DependencyProperty IsSearchTextBoxProperty =
             DependencyProperty.RegisterAttached("IsSearchTextBox", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
 
-        public static bool GetIsSearchResultsGrid(DependencyObject obj)
-        {
-            return (bool)obj.GetValue(IsSearchResultsGridProperty);
-        }
-
-        public static void SetIsSearchResultsGrid(DependencyObject obj, bool value)
-        {
-            obj.SetValue(IsSearchResultsGridProperty, value);
-        }
-
-        /// <summary>
-        /// Used to get the search results grid of the current search tab
-        /// </summary>
-        public static readonly DependencyProperty IsSearchResultsGridProperty =
-            DependencyProperty.RegisterAttached("IsSearchResultsGrid", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
-
         public MainWindow()
         {
             _CommandHandler = new MainWindowCommandHandler(this);
@@ -230,7 +214,7 @@ namespace CodeIDX
 
         void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!ApplicationView.IsReady && e.Key == Key.Escape)
+            if (e.Key == Key.Escape)
                 ApplicationView.CancelCurrentOperation();
         }
 
@@ -331,18 +315,6 @@ namespace CodeIDX
             }
         }
 
-        internal void FocusSearchResults(bool selectFirstItem = false)
-        {
-            var curSearchResultsGrid = TreeHelper.FindVisualChild<DataGridControl>(tcMain, (tb) => MainWindow.GetIsSearchResultsGrid(tb) == true);
-            if (curSearchResultsGrid != null)
-            {
-                if (selectFirstItem && curSearchResultsGrid.Items.Count > 0)
-                    curSearchResultsGrid.SelectedIndex = 0;
-
-                FocusManager.SetFocusedElement(this, curSearchResultsGrid);
-            }
-        }
-
         private void InitWindowSettings()
         {
             Point? location = CodeIDXSettings.Default.WindowLocation;
@@ -381,12 +353,6 @@ namespace CodeIDX
             if (e.Key == Key.Enter)
             {
                 ApplicationViewService.RunSearch(ApplicationView.CurrentSearch);
-            }
-            if (e.Key == Key.Down)
-            {
-                ApplicationView.CurrentSearch.SelectedResult = ApplicationView.CurrentSearch.SearchResults.FirstOrDefault();
-                FocusSearchResults(true);
-                e.Handled = true;
             }
         }
 
@@ -451,7 +417,7 @@ namespace CodeIDX
 
                 var draggedItem = searchView.SelectedResult;
                 //exit if not over listViewItem, so scrolling still works
-                if (TreeHelper.FindVisualAncestor<DataRow>(e.OriginalSource as DependencyObject) == null)
+                if (TreeHelper.FindVisualAncestor<ListViewItem>(e.OriginalSource as DependencyObject) == null)
                     return;
 
                 StringCollection fileList = new StringCollection();
@@ -478,27 +444,9 @@ namespace CodeIDX
 
         private void SearchResult_DoubleClick(object sender, MouseButtonEventArgs e)
         {
-            //when trying to edit the matching line, disable the doubleClick command
-            if ((Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt)
-                return;
-            //when currently editing matching line, abort
-            if (TreeHelper.FindAncestor<Xceed.Wpf.Toolkit.AutoSelectTextBox>(e.OriginalSource as DependencyObject) != null)
-                return;
-
             var selectedItem = ((FrameworkElement)sender).DataContext as SearchResultViewModel;
-            if (selectedItem == null)
-                return;
-
-            try
-            {
-                string file = selectedItem.GetFilePath();
-                if (!CodeIDXSettings.Results.UseVisualStudioAsDefault || !Win32Helper.OpenInVisualStudio(file, selectedItem.LineNumber))
-                {
-                    //use default application
-                    Process.Start(file);
-                }
-            }
-            catch { }
+            if (selectedItem != null)
+                SearchResultsView_OpenFileCommand.OpenFileInDefaultEditor(selectedItem);
         }
 
         private void SearchTab_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -521,17 +469,8 @@ namespace CodeIDX
                 return;
 
             var searchViewModel = tabItem.DataContext as SearchViewModel;
-            if (searchViewModel == null)
-                return;
-
-            try
-            {
+            if (searchViewModel != null)
                 ApplicationView.RemoveSearch(searchViewModel);
-            }
-            catch
-            {
-                //Xceed.DataGridControl occasionally throws an exception here, ignore it
-            }
         }
 
         private void CloseSearch_Click(object sender, RoutedEventArgs e)
@@ -585,11 +524,18 @@ namespace CodeIDX
 
         private void Result_KeyDown(object sender, KeyEventArgs e)
         {
-            var dataGrid = (DataGridControl)sender;
-            if (e.Key == Key.Delete)
+            var listView = (ListView)sender;
+            if (e.Key == Key.End)
+            {
+                //disable END
+                //If end is pressed and many lazy results are still to be loaded, all of them will be loaded at once
+                //because the last item is always selected right away.
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Delete)
             {
                 //remove selected files
-                var selectedResultFiles = dataGrid.SelectedItems.OfType<SearchResultViewModel>()
+                var selectedResultFiles = listView.SelectedItems.OfType<SearchResultViewModel>()
                     .Select(cur => cur.GetFilePath())
                     .Distinct();
 
@@ -598,7 +544,7 @@ namespace CodeIDX
             }
             else if (e.Key == Key.Enter)
             {
-                var searchResult = dataGrid.SelectedItem as SearchResultViewModel;
+                var searchResult = listView.SelectedItem as SearchResultViewModel;
                 if (searchResult == null)
                     return;
 
@@ -625,34 +571,13 @@ namespace CodeIDX
             else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.C)
             {
                 //copy selected filename to clipboard
-                var searchResult = dataGrid.SelectedItem as SearchResultViewModel;
+                var searchResult = listView.SelectedItem as SearchResultViewModel;
                 if (searchResult != null)
                     Clipboard.SetText(searchResult.GetFilePath());
             }
             else if (e.Key == Key.F5)
             {
                 ApplicationViewService.RunLastSearch(ApplicationView.CurrentSearch);
-            }
-        }
-
-        private void DataGridControl_CurrentChanged(object sender, DataGridCurrentChangedEventArgs e)
-        {
-            //SelectedResult must be set manually her!
-            //On a tab switch, the dataGrid sets SelectedResult = null;
-            //To change that the binding must be OneWay and the value set here.
-            var dataGrid = sender as DataGridControl;
-            if (dataGrid != null && ApplicationView.CurrentSearch != null)
-                ApplicationView.CurrentSearch.SelectedResult = dataGrid.CurrentItem as SearchResultViewModel;
-        }
-
-        private void SearchResults_RightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            var clickedDataRow = TreeHelper.FindVisualAncestor<DataRow>(e.OriginalSource as DependencyObject);
-            if (clickedDataRow != null && clickedDataRow.DataContext is SearchResultViewModel)
-            {
-                SearchResultViewModel clickedResult = (SearchResultViewModel)clickedDataRow.DataContext;
-                ((DataGridControl)sender).CurrentItem = clickedResult;
-                ApplicationView.CurrentSearch.SelectedResult = clickedResult;
             }
         }
 
@@ -710,7 +635,7 @@ namespace CodeIDX
         private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
         {
             //Mouse back button
-            if (e.ChangedButton== MouseButton.XButton1)
+            if (e.ChangedButton == MouseButton.XButton1)
             {
                 string searchTerm = ApplicationViewService.RunPreviousSearch(ApplicationView.CurrentSearch);
                 if (!string.IsNullOrEmpty(searchTerm))
@@ -723,6 +648,142 @@ namespace CodeIDX
                 if (!string.IsNullOrEmpty(searchTerm))
                     ApplicationView.CurrentSearch.SearchText = searchTerm;
             }
+        }
+
+        private void SearchTab_Close_Click(object sender, RoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            if (element == null)
+                return;
+
+            var searchViewModel = element.DataContext as SearchViewModel;
+            if (searchViewModel != null)
+                ApplicationView.RemoveSearch(searchViewModel);
+        }
+
+        private void SearchTab_Close_All(object sender, RoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            if (element == null)
+                return;
+
+            var searchViewModel = element.DataContext as SearchViewModel;
+            if (searchViewModel != null)
+            {
+                searchViewModel.Reset();
+                foreach (var search in ApplicationView.Searches.ToList())
+                {
+                    if (search == searchViewModel)
+                        continue;
+
+                    ApplicationView.RemoveSearch(search);
+                }
+            }
+        }
+
+        private void SearchTab_CloseAllButThis_Click(object sender, RoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            if (element == null)
+                return;
+
+            var searchViewModel = element.DataContext as SearchViewModel;
+            if (searchViewModel != null)
+            {
+                foreach (var search in ApplicationView.Searches.ToList())
+                {
+                    if (search == searchViewModel)
+                        continue;
+
+                    ApplicationView.RemoveSearch(search);
+                }
+            }
+        }
+
+        private void SearchTab_CloseLeft_Click(object sender, RoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            if (element == null)
+                return;
+
+            var searchViewModel = element.DataContext as SearchViewModel;
+            if (searchViewModel != null)
+            {
+                foreach (var search in ApplicationView.Searches.ToList())
+                {
+                    if (search == searchViewModel)
+                        return;
+
+                    ApplicationView.RemoveSearch(search);
+                }
+            }
+        }
+
+        private void SearchTab_CloseRight_Click(object sender, RoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            if (element == null)
+                return;
+
+            var searchViewModel = element.DataContext as SearchViewModel;
+            if (searchViewModel != null)
+            {
+                int curSearchIndex = ApplicationView.Searches.IndexOf(searchViewModel);
+                for (int i = ApplicationView.Searches.Count - 1; i > curSearchIndex; i--)
+                    ApplicationView.RemoveSearch(ApplicationView.Searches[i]);
+            }
+        }
+
+        private void SearchResult_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            //SelectedResult must be set manually here!
+            //On a tab switch, the listView sets SelectedResult = null;
+            //To change that the binding must be OneWay and the value set here.
+            var listView = sender as ListView;
+            if (listView != null && ApplicationView.CurrentSearch != null)
+                ApplicationView.CurrentSearch.SelectedResult = e.AddedItems.OfType<SearchResultViewModel>().FirstOrDefault();
+        }
+
+        private void lvSearchResults_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            SearchViewModel oldSearch = e.OldValue as SearchViewModel;
+            SearchViewModel newSearch = e.NewValue as SearchViewModel;
+
+            ListView listView = (ListView)sender;
+            ScrollViewer scrollViewer = TreeHelper.FindVisualChild<ScrollViewer>(listView);
+            if (scrollViewer == null)
+                return;
+
+            if (oldSearch != null)
+            {
+                //save old scroll position
+                oldSearch.VerticalScrollPosition = scrollViewer.VerticalOffset;
+            }
+
+            if (newSearch != null)
+            {
+                //set current scroll position
+                scrollViewer.ScrollToVerticalOffset(newSearch.VerticalScrollPosition);
+            }
+        }
+
+        void SearchResults_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            ScrollViewer sv = (ScrollViewer)e.OriginalSource;
+            if (sv.ScrollableHeight == 0 || e.VerticalOffset < sv.ScrollableHeight)
+                return;
+
+            //load lazy items
+            var currentSearchView = sv.DataContext as SearchViewModel;
+            if (currentSearchView != null)
+                currentSearchView.LoadNextLazyResults();
+        }
+
+        private void SearchResultsView_Loaded(object sender, RoutedEventArgs e)
+        {
+            ScrollViewer scrollViewer = TreeHelper.FindVisualChild<ScrollViewer>(sender as DependencyObject);
+            if (scrollViewer != null)
+                ApplicationView.ScrollResultsToSartAction = () => scrollViewer.ScrollToTop();
         }
 
     }

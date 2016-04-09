@@ -1,5 +1,9 @@
-﻿using CodeIDX.ViewModels;
+﻿using CodeIDX.Services.Lucene;
+using CodeIDX.Settings;
+using CodeIDX.ViewModels;
 using CodeIDX.ViewModels.Options;
+using CodeIDX.ViewModels.Services;
+using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using System;
 using System.Collections.Generic;
@@ -36,22 +40,7 @@ namespace CodeIDX.Views
         {
             InitializeComponent();
 
-            //Loaded += OptionsDialog_Loaded;
             Closing += OptionsDialog_Closing;
-        }
-
-        void OptionsDialog_Loaded(object sender, RoutedEventArgs e)
-        {
-            //if (DialogModel.LastOptionsPageType == typeof(ResultOptionsViewModel))
-            //    SelectedOptionsItem = DialogModel.Results;
-            //else if (DialogModel.LastOptionsPageType == typeof(UIOptionsViewModel))
-            //    SelectedOptionsItem = DialogModel.UserInterface;
-            //else if (DialogModel.LastOptionsPageType == typeof(SearchOptionsViewModel))
-            //    SelectedOptionsItem = DialogModel.Search;
-            //else if (DialogModel.LastOptionsPageType == typeof(BlacklistOptionsViewModel))
-            //    SelectedOptionsItem = DialogModel.Blacklist;
-            //else
-            //    SelectedOptionsItem = DialogModel.General;
         }
 
         void OptionsDialog_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -77,6 +66,11 @@ namespace CodeIDX.Views
             {
                 DialogModel.Blacklist.AddDirectory(folderBrowser.SelectedPath);
             }
+        }
+
+        private void OptimizeNow_Click(object sender, RoutedEventArgs e)
+        {
+            Task.Run(() => LuceneIndexer.Instance.OptimizeIndex(ApplicationViewService.ApplicationView.CurrentIndexFile));
         }
 
     }

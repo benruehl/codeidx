@@ -40,6 +40,20 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Views/Resources/MainWindowResources.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <ContextMenu x:Key="SearchTabContextMenu">
+                <MenuItem Click="SearchTab_Close_Click"
+                          Header="Close" />
+                <MenuItem Click="SearchTab_Close_All"
+                          Header="Close All" />
+                <MenuItem Click="SearchTab_CloseAllButThis_Click"
+                          Header="Close All But This" />
+                <MenuItem Click="SearchTab_CloseLeft_Click"
+                          Header="Close Left" />
+                <MenuItem Click="SearchTab_CloseRight_Click"
+                          Header="Close Right" />
+            </ContextMenu>
+
         </ResourceDictionary>
     </Window.Resources>
 
@@ -214,6 +228,7 @@
                     <Style TargetType="{x:Type TabItem}">
                         <Setter Property="MaxWidth" Value="200" />
                         <Setter Property="ToolTip" Value="{Binding LastSearchText}" />
+                        <Setter Property="ContextMenu" Value="{StaticResource SearchTabContextMenu}" />
                         <Setter Property="HeaderTemplate">
                             <Setter.Value>
                                 <DataTemplate>
@@ -241,15 +256,20 @@
                                 <Setter Property="HeaderTemplate">
                                     <Setter.Value>
                                         <DataTemplate>
-                                            <TextBlock>
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="{}({1}) {0}">
-                                                        <Binding Path="LastSearchText" />
-                                                        <Binding FallbackValue="0"
-                                                                 Path="SearchResults.Count" />
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="*"
+                                                           Visibility="{Binding HasLazyResults,
+                                                                                Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}" />
+                                                <TextBlock>
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}({1}) {0}">
+                                                            <Binding Path="LastSearchText" />
+                                                            <Binding FallbackValue="0"
+                                                                     Path="SearchResultsView.View.Count" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -264,17 +284,22 @@
                                 <Setter Property="HeaderTemplate">
                                     <Setter.Value>
                                         <DataTemplate>
-                                            <TextBlock>
-                                                <TextBlock.Text>
-                                                    <MultiBinding StringFormat="{}({1} : {2}) {0}">
-                                                        <Binding Path="LastSearchText" />
-                                                        <Binding FallbackValue="0"
-                                                                 Path="SearchResults.Count" />
-                                                        <Binding FallbackValue="0"
-                                                                 Path="FileCount" />
-                                                    </MultiBinding>
-                                                </TextBlock.Text>
-                                            </TextBlock>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="*"
+                                                           Visibility="{Binding HasLazyResults,
+                                                                                Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}" />
+                                                <TextBlock>
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}({1} : {2}) {0}">
+                                                            <Binding Path="LastSearchText" />
+                                                            <Binding FallbackValue="0"
+                                                                     Path="SearchResultsView.View.Count" />
+                                                            <Binding FallbackValue="0"
+                                                                     Path="FileCount" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -482,126 +507,83 @@
                                 </Grid>
                             </Grid>
 
-                            <xcdg:DataGridControl Grid.Row="1"
-                                                  AutoCreateColumns="false"
-                                                  BorderBrush="Gray"
-                                                  BorderThickness="1,1,1,0"
-                                                  CurrentChanged="DataGridControl_CurrentChanged"
-                                                  ItemScrollingBehavior="Immediate"
-                                                  ItemsSource="{Binding SearchResultsView}"
-                                                  MouseMove="SearchResults_MouseMove"
-                                                  MouseRightButtonDown="SearchResults_RightButtonDown"
-                                                  PreviewKeyDown="Result_KeyDown"
-                                                  PreviewMouseLeftButtonDown="SearchResults_LeftButtonDown"
-                                                  SelectedItem="{Binding SelectedResult,
-                                                                         Mode=OneWay}"
-                                                  local:MainWindow.IsSearchResultsGrid="True">
-                                <xcdg:DataGridControl.Resources>
-                                    <Style TargetType="{x:Type xcdg:ColumnManagerRow}">
-                                        <Setter Property="AllowColumnReorder" Value="False" />
-                                    </Style>
 
-                                    <Style TargetType="{x:Type xctk:AutoSelectTextBox}">
-                                        <Setter Property="IsReadOnly" Value="True" />
-                                    </Style>
-
-                                    <Style TargetType="{x:Type xcdg:GroupByControl}">
-                                        <!--  Hide sorting column  -->
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </Style>
-
-                                    <ContextMenu x:Key="RowContextMenu">
-                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenLocationCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Open Folder" />
-                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenFileCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Open File" />
-                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenFileInNotepadCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Open File in Notepad++" />
-                                        <MenuItem Command="Commands:SearchResultViewCommands.CopyFilepathCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Copy Full Path" />
-                                        <MenuItem Command="Commands:SearchResultViewCommands.RemoveFileFromResultsCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Remove File" />
-                                        <MenuItem Command="Commands:SearchResultViewCommands.FilterFileCommand"
-                                                  CommandParameter="{Binding DataContext,
-                                                                             RelativeSource={RelativeSource Self}}"
-                                                  Header="Filter File" />
-                                    </ContextMenu>
-
-                                    <Style TargetType="{x:Type xcdg:DataRow}">
-                                        <Setter Property="ContextMenu" Value="{StaticResource RowContextMenu}" />
+                            <ListView x:Name="lvSearchResults"
+                                      Grid.Row="1"
+                                      DataContextChanged="lvSearchResults_DataContextChanged"
+                                      IsSynchronizedWithCurrentItem="True"
+                                      ItemsSource="{Binding SearchResultsView.View}"
+                                      Loaded="SearchResultsView_Loaded"
+                                      MouseMove="SearchResults_MouseMove"
+                                      PreviewKeyDown="Result_KeyDown"
+                                      PreviewMouseLeftButtonDown="SearchResults_LeftButtonDown"
+                                      ScrollViewer.ScrollChanged="SearchResults_ScrollChanged"
+                                      SelectedItem="{Binding SelectedResult,
+                                                             Mode=OneWay}"
+                                      SelectionChanged="SearchResult_SelectionChanged"
+                                      VirtualizingPanel.IsVirtualizing="True">
+                                <ListView.Resources>
+                                    <Style TargetType="{x:Type ListViewItem}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                         <EventSetter Event="MouseDoubleClick"
                                                      Handler="SearchResult_DoubleClick" />
+                                        <Setter Property="ContextMenu">
+                                            <Setter.Value>
+                                                <ContextMenu>
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenLocationCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Open Folder" />
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenFileCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Open File" />
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenFileInNotepadCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Open File in Notepad"
+                                                              ToolTip="Opening file in Notepad++ if installed." />
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.CopyFilepathCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Copy Full Path" />
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.RemoveFileFromResultsCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Remove File" />
+                                                    <MenuItem Command="Commands:SearchResultViewCommands.FilterFileCommand"
+                                                              CommandParameter="{Binding DataContext,
+                                                                                         RelativeSource={RelativeSource Self}}"
+                                                              Header="Filter File" />
+                                                </ContextMenu>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Style>
+                                </ListView.Resources>
 
-
-                                    <Style TargetType="{x:Type xcdg:DataCell}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource self},
-                                                                           Path=FieldName}"
-                                                         Value="Directory">
-                                                <Setter Property="ToolTip">
-                                                    <Setter.Value>
-                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
-                                                            <Binding Path="Directory" />
-                                                            <Binding Source="\" />
-                                                            <Binding Path="Filename" />
-                                                            <Binding Path="Extension" />
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource self},
-                                                                           Path=FieldName}"
-                                                         Value="Filename">
-                                                <Setter Property="ToolTip">
-                                                    <Setter.Value>
-                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
-                                                            <Binding Path="Directory" />
-                                                            <Binding Source="\" />
-                                                            <Binding Path="Filename" />
-                                                            <Binding Path="Extension" />
-                                                        </MultiBinding>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </xcdg:DataGridControl.Resources>
-
-                                <xcdg:DataGridControl.View>
-                                    <xcdg:TableView />
-                                </xcdg:DataGridControl.View>
-
-                                <xcdg:DataGridControl.Columns>
-                                    <xcdg:Column Title="Directory"
-                                                 Width="300"
-                                                 FieldName="Directory"
-                                                 IsMainColumn="True"
-                                                 ReadOnly="True"
-                                                 ToolTipService.ToolTip="Test"
-                                                 Visible="True">
-                                        <xcdg:Column.CellContentTemplate>
-                                            <DataTemplate>
-                                                <StackPanel>
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Width="300"
+                                                        Header="Directory">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
                                                     <TextBlock HorizontalAlignment="Right"
-                                                               Text="{Binding}">
+                                                               Text="{Binding Directory}">
                                                         <TextBlock.Style>
                                                             <Style BasedOn="{StaticResource {x:Type TextBlock}}"
                                                                    TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="ToolTip">
+                                                                    <Setter.Value>
+                                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
+                                                                            <Binding Path="Directory" />
+                                                                            <Binding Source="\" />
+                                                                            <Binding Path="Filename" />
+                                                                            <Binding Path="Extension" />
+                                                                        </MultiBinding>
+                                                                    </Setter.Value>
+                                                                </Setter>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding DataContext.IsFirstOfFile,
-                                                                                                   RelativeSource={RelativeSource Mode=FindAncestor,
-                                                                                                                                  AncestorType={x:Type xcdg:DataCell}}}"
+                                                                    <DataTrigger Binding="{Binding IsFirstOfFile}"
                                                                                  Value="False">
                                                                         <Setter Property="Foreground" Value="Gray" />
                                                                     </DataTrigger>
@@ -609,61 +591,81 @@
                                                             </Style>
                                                         </TextBlock.Style>
                                                     </TextBlock>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </xcdg:Column.CellContentTemplate>
-                                    </xcdg:Column>
-                                    <xcdg:Column Title="Filename"
-                                                 FieldName="Filename"
-                                                 ReadOnly="True">
-                                        <xcdg:Column.CellContentTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding}">
-                                                    <TextBlock.Style>
-                                                        <Style BasedOn="{StaticResource {x:Type TextBlock}}"
-                                                               TargetType="{x:Type TextBlock}">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsFirstOfFile,
-                                                                                               RelativeSource={RelativeSource Mode=FindAncestor,
-                                                                                                                              AncestorType={x:Type xcdg:DataCell}}}"
-                                                                             Value="False">
-                                                                    <Setter Property="Foreground" Value="Gray" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </xcdg:Column.CellContentTemplate>
-                                    </xcdg:Column>
-                                    <xcdg:Column Title="Ext"
-                                                 Width="50"
-                                                 FieldName="Extension"
-                                                 ReadOnly="True" />
-                                    <xcdg:Column Title="Line"
-                                                 Width="50"
-                                                 AllowSort="False"
-                                                 FieldName="LineNumber"
-                                                 ReadOnly="True" />
-                                    <xcdg:Column Title="Match"
-                                                 Width="*"
-                                                 AllowSort="False"
-                                                 FieldName="MatchingLine"
-                                                 ReadOnly="{Binding Path=EnableEditMatchOnDoubleClick,
-                                                                    Source={x:Static Settings:CodeIDXSettings.Results},
-                                                                    ConverterParameter=foo,
-                                                                    Converter={x:Static Converters:BoolToReversedBoolConverter.Instance}}">
-                                        <xcdg:Column.DisplayMemberBindingInfo>
-                                            <xcdg:DataGridBindingInfo Path="MatchingLine" />
-                                        </xcdg:Column.DisplayMemberBindingInfo>
-                                        <xcdg:Column.CellContentTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Controls:TextBlockEx.FormattedText="{Binding DataContext, Converter={x:Static Converters:HighlightedSearchResultToInlineConverter.Instance}, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type xcdg:DataCell}}}" />
-                                            </DataTemplate>
-                                        </xcdg:Column.CellContentTemplate>
-                                    </xcdg:Column>
-                                </xcdg:DataGridControl.Columns>
-                            </xcdg:DataGridControl>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Width="200"
+                                                        Header="Filename">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Filename}">
+                                                        <TextBlock.Style>
+                                                            <Style BasedOn="{StaticResource {x:Type TextBlock}}"
+                                                                   TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="ToolTip">
+                                                                    <Setter.Value>
+                                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
+                                                                            <Binding Path="Directory" />
+                                                                            <Binding Source="\" />
+                                                                            <Binding Path="Filename" />
+                                                                            <Binding Path="Extension" />
+                                                                        </MultiBinding>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsFirstOfFile}"
+                                                                                 Value="False">
+                                                                        <Setter Property="Foreground" Value="Gray" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                        <GridViewColumn Width="50"
+                                                        DisplayMemberBinding="{Binding Extension}"
+                                                        Header="Ext" />
+                                        <GridViewColumn Width="50"
+                                                        DisplayMemberBinding="{Binding LineNumber}"
+                                                        Header="Line" />
+                                        <GridViewColumn Header="Match">
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Controls:TextBlockEx.FormattedText="{Binding Converter={x:Static Converters:HighlightedSearchResultToInlineConverter.Instance}}" />
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                            <!--  Load lazy results buttons  -->
+                            <StackPanel Grid.Row="1"
+                                        Margin="0,0,25,25"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Bottom"
+                                        Orientation="Horizontal"
+                                        Visibility="{Binding HasLazyResults,
+                                                             Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}">
+                                <Button Margin="0,0,5,0"
+                                        Background="WhiteSmoke"
+                                        BorderBrush="#7FACCC"
+                                        Command="Commands:SearchViewCommands.LoadAllLazyResultsCommand"
+                                        CommandParameter="{Binding Path=.}"
+                                        Content="Load All">
+                                    <Button.ToolTip>
+                                        <ToolTip Content="{Binding LazyResultsCount}"
+                                                 ContentStringFormat="{}Load remaining {0} results" />
+                                    </Button.ToolTip>
+                                </Button>
+                                <Button Background="WhiteSmoke"
+                                        BorderBrush="#7FACCC"
+                                        Command="Commands:SearchViewCommands.LoadNextLazyResultsCommand"
+                                        CommandParameter="{Binding Path=.}"
+                                        Content="Load Next" />
+                            </StackPanel>
                         </Grid>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
@@ -685,16 +687,6 @@
                                            DataContext="{Binding CurrentSearch.SelectedResult}"
                                            IsEditEnabled="{Binding DataContext.UserSettings.IsEditEnabled,
                                                                    ElementName=MainGrid}" />
-            <!--
-                <avalonEdit:TextEditor x:Name="PreviewEditor"
-                Grid.Row="2"
-                DataContext="{Binding CurrentSearch.SelectedResult}"
-                HorizontalScrollBarVisibility="Auto"
-                IsReadOnly="True"
-                ShowLineNumbers="True"
-                Visibility="{Binding UserSettings.IsPreviewVisible,
-                Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}" />
-            -->
         </Grid>
 
         <StatusBar x:Name="sbStatus"
@@ -709,6 +701,14 @@
                                      Value="False">
                             <Setter Property="Background" Value="#007ACC" />
                             <Setter Property="Foreground" Value="White" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsUpdating}"
+                                     Value="True">
+                            <Setter Property="Background" Value="#7FACCC" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsAutomaticUpdateInProgress}"
+                                     Value="True">
+                            <Setter Property="Background" Value="#BEC6CC" />
                         </DataTrigger>
 
                         <DataTrigger Binding="{Binding StatusChangeAttempted}"
@@ -764,14 +764,10 @@
                                              Value="False">
                                     <Setter Property="Text" Value="{Binding Status, StringFormat='{}{0} …'}" />
                                 </DataTrigger>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsReady}" Value="False" />
-                                        <Condition Binding="{Binding CanCurrentOperationCancel}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-
+                                <DataTrigger Binding="{Binding CanCurrentOperationCancel}"
+                                             Value="True">
                                     <Setter Property="Text" Value="{Binding Status, StringFormat='{}{0} …    ESC to Cancel'}" />
-                                </MultiDataTrigger>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>

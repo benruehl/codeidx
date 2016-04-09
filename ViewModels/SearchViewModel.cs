@@ -1,5 +1,7 @@
 ﻿using CodeIDX.Helpers;
+using CodeIDX.Services;
 using CodeIDX.Services.Lucene;
+using CodeIDX.Settings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +13,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Windows;
+using System.Windows.Data;
 using System.Windows.Threading;
 using Xceed.Wpf.DataGrid;
 
@@ -18,6 +22,9 @@ namespace CodeIDX.ViewModels
 {
     public class SearchViewModel : ViewModel, IDataErrorInfo
     {
+        public event Action NewSearchResultsLoaded;
+
+        private IEnumerable<SearchResultViewModel> _LazyResults;
         private bool _IsSearchingInResults;
         private ObservableCollection<string> _ActiveFileFilters = new ObservableCollection<string>();
         private const int FilterDelayInMilliseconds = 600;
@@ -167,7 +174,6 @@ namespace CodeIDX.ViewModels
 
         private string _DirectoryFilterExpression = string.Empty;
         private string _FileFilterExpression = string.Empty;
-        private DataGridCollectionView _SearchResultsView;
         private bool _IsFilterEnabled = true;
         private SearchResultViewModel _SelectedResult;
         private bool _MatchCase;
@@ -176,20 +182,9 @@ namespace CodeIDX.ViewModels
         private ObservableCollection<SearchResultViewModel> _SearchResultsInternal;
         private ReadOnlyCollection<string> _AvailableFileFilters;
 
-        public ReadOnlyObservableCollection<SearchResultViewModel> SearchResults { get; private set; }
+        public CollectionViewSource SearchResultsView { get; private set; }
 
-        public DataGridCollectionView SearchResultsView
-        {
-            get
-            {
-                return _SearchResultsView;
-            }
-            private set
-            {
-                _SearchResultsView = value;
-                FirePropertyChanged("SearchResultsView");
-            }
-        }
+        public ReadOnlyObservableCollection<SearchResultViewModel> SearchResults { get; private set; }
 
         public ReadOnlyCollection<string> AvailableFileFilters
         {
@@ -296,7 +291,10 @@ namespace CodeIDX.ViewModels
 
             _SearchResultsInternal = new ObservableCollection<SearchResultViewModel>();
             SearchResults = new ReadOnlyObservableCollection<SearchResultViewModel>(_SearchResultsInternal);
-            SearchResultsView = new DataGridCollectionView(_SearchResultsInternal);
+            SearchResultsView = new CollectionViewSource
+            {
+                Source = SearchResults
+            };
 
             _UpdateFilterTimer = new DispatcherTimer
             {
@@ -315,59 +313,73 @@ namespace CodeIDX.ViewModels
                 DirectoryFilterExpression = string.Empty;
         }
 
-        public void RunSearch(IndexViewModel index, string searchText, CancellationToken cancelToken)
+        public void RunSearch(IndexViewModel index, string searchText, CancellationToken cancelToken, Action lazySearchFinishedAction)
         {
             LastSearchText = searchText;
+            LazyResults = null;
 
-            var results = LuceneSearcher.Instance.Search(index, searchText, MatchCase, MatchWholeWord, EnableWildcards, cancelToken);
+            Task<IEnumerable<SearchResultViewModel>> ongoingSearchTask;
+            var results = LuceneSearcher.Instance.Search(index, searchText, MatchCase, MatchWholeWord, EnableWildcards, out ongoingSearchTask, cancelToken);
             if (cancelToken.IsCancellationRequested)
                 return;
 
-            using (SearchResultsView.DeferRefresh())
+            if (ongoingSearchTask != null)
             {
-                _SearchResultsInternal.Clear();
-                foreach (var item in SortResults(results))
-                {
-                    item.Parent = this;
-                    _SearchResultsInternal.Add(item);
-                }
+                ongoingSearchTask.ContinueWith(lateResultsTask =>
+                    {
+                        if (CodeIDXSettings.Search.LoadRemainingLazyResults)
+                            AddItemsToResultsView(lateResultsTask.Result, false);
+                        else
+                            LazyResults = lateResultsTask.Result;
+                    });
             }
 
+            AddItemsToResultsView(results, true);
             CountFiles();
+            if (lazySearchFinishedAction != null)
+            {
+                if (ongoingSearchTask != null)
+                    ongoingSearchTask.ContinueWith(task => lazySearchFinishedAction());
+                else
+                    lazySearchFinishedAction();
+            }
+        }
+
+        public void RunFileSearch(IndexViewModel index, string searchText, IEnumerable<string> files, CancellationToken cancelToken, Action lazySearchFinishedAction)
+        {
+            LastSearchText = searchText;
+
+            Task<IEnumerable<SearchResultViewModel>> ongoingSearchTask;
+            var results = LuceneSearcher.Instance.Search(index, searchText, MatchCase, MatchWholeWord, EnableWildcards, out ongoingSearchTask, CancellationToken.None, files);
+            if (cancelToken.IsCancellationRequested)
+                return;
+
+            AddItemsToResultsView(results, true);
+            if (ongoingSearchTask != null)
+                ongoingSearchTask.ContinueWith(lateResultsTask => AddItemsToResultsView(lateResultsTask.Result, false));
+
+            CountFiles();
+            if (lazySearchFinishedAction != null)
+            {
+                if (ongoingSearchTask != null)
+                    ongoingSearchTask.ContinueWith(task => lazySearchFinishedAction());
+                else
+                    lazySearchFinishedAction();
+            }
+        }
+
+        private void Dispatch(Action action)
+        {
+            if (action != null)
+                App.Current.Dispatcher.Invoke(action);
         }
 
         private void CountFiles()
         {
-            FileCount = SearchResults.GroupBy(cur => cur.GetFilePath()).Count();
-        }
-
-        public void RunFileSearch(IndexViewModel index, string searchText, IEnumerable<string> files, CancellationToken cancelToken)
-        {
-            LastSearchText = searchText;
-
-            var results = LuceneSearcher.Instance.Search(index, searchText, MatchCase, MatchWholeWord, EnableWildcards, CancellationToken.None, files);
-            if (cancelToken.IsCancellationRequested)
-                return;
-
-            using (SearchResultsView.DeferRefresh())
-            {
-                _SearchResultsInternal.Clear();
-                foreach (var item in SortResults(results))
+            Dispatch(() =>
                 {
-                    item.Parent = this;
-                    _SearchResultsInternal.Add(item);
-                }
-            }
-
-            CountFiles();
-        }
-
-        private IEnumerable<SearchResultViewModel> SortResults(IEnumerable<SearchResultViewModel> results)
-        {
-            return results.OrderBy(cur => cur.Directory)
-                .ThenBy(cur => cur.Filename)
-                .ThenBy(cur => cur.Extension)
-                .ThenBy(cur => cur.LineNumber);
+                    FileCount = SearchResultsView.View.OfType<SearchResultViewModel>().GroupBy(cur => cur.GetFilePath()).Count();
+                });
         }
 
         public void UpdateAvailableFileFilters(IEnumerable<string> availableFileFilters)
@@ -388,30 +400,24 @@ namespace CodeIDX.ViewModels
             if (filterKind == FilterKind.LeaveDirectory)
             {
                 //TODO use search -> faster
-                using (SearchResultsView.DeferRefresh())
+                foreach (var cur in _SearchResultsInternal.ToList())
                 {
-                    foreach (var cur in _SearchResultsInternal.ToList())
-                    {
-                        bool isDirectory = cur.Directory == filter;
-                        bool isSubDirectory = cur.Directory.StartsWith(filter + Path.DirectorySeparatorChar);
+                    bool isDirectory = cur.Directory == filter;
+                    bool isSubDirectory = cur.Directory.StartsWith(filter + Path.DirectorySeparatorChar);
 
-                        if (!isDirectory && !isSubDirectory)
-                            _SearchResultsInternal.Remove(cur);
-                    }
+                    if (!isDirectory && !isSubDirectory)
+                        _SearchResultsInternal.Remove(cur);
                 }
             }
             else if (filterKind == FilterKind.RemoveDirectory)
             {
-                using (SearchResultsView.DeferRefresh())
+                foreach (var cur in _SearchResultsInternal.ToList())
                 {
-                    foreach (var cur in _SearchResultsInternal.ToList())
-                    {
-                        bool isDirectory = cur.Directory == filter;
-                        bool isSubDirectory = cur.Directory.StartsWith(filter + Path.DirectorySeparatorChar);
+                    bool isDirectory = cur.Directory == filter;
+                    bool isSubDirectory = cur.Directory.StartsWith(filter + Path.DirectorySeparatorChar);
 
-                        if (isDirectory || isSubDirectory)
-                            _SearchResultsInternal.Remove(cur);
-                    }
+                    if (isDirectory || isSubDirectory)
+                        _SearchResultsInternal.Remove(cur);
                 }
             }
             else if (filterKind == FilterKind.LeaveFile)
@@ -419,26 +425,20 @@ namespace CodeIDX.ViewModels
                 //RunFileSearch(ApplicationViewModel.Instance.CurrentIndexFile, filter);
 
                 var fileResults = SearchResults.Where(cur => cur.GetFilePath() == filter).ToList();
-                using (SearchResultsView.DeferRefresh())
-                {
-                    _SearchResultsInternal.Clear();
-                    foreach (var match in fileResults)
-                        _SearchResultsInternal.Add(match);
-                }
+                _SearchResultsInternal.Clear();
+                foreach (var match in fileResults)
+                    _SearchResultsInternal.Add(match);
             }
             else if (filterKind == FilterKind.RemoveFile)
             {
-                using (SearchResultsView.DeferRefresh())
+                foreach (var cur in _SearchResultsInternal.ToList())
                 {
-                    foreach (var cur in _SearchResultsInternal.ToList())
-                    {
-                        bool isFile = cur.Directory == Path.GetDirectoryName(filter) &&
-                            cur.Filename == Path.GetFileNameWithoutExtension(filter) &&
-                            cur.Extension == Path.GetExtension(filter);
+                    bool isFile = cur.Directory == Path.GetDirectoryName(filter) &&
+                        cur.Filename == Path.GetFileNameWithoutExtension(filter) &&
+                        cur.Extension == Path.GetExtension(filter);
 
-                        if (isFile)
-                            _SearchResultsInternal.Remove(cur);
-                    }
+                    if (isFile)
+                        _SearchResultsInternal.Remove(cur);
                 }
             }
 
@@ -477,15 +477,16 @@ namespace CodeIDX.ViewModels
             //update filter
             if (!IsFilterEnabled)
             {
-                SearchResultsView.Filter = null;
+                SearchResultsView.View.Filter = null;
             }
-            else if (SearchResultsView.Filter == null)
+            else if (SearchResultsView.View.Filter == null)
             {
-                SearchResultsView.Filter = ItemFilter;
+                SearchResultsView.View.Filter = ItemFilter;
             }
             else
             {
-                SearchResultsView.Refresh();
+                //coming in here, when changing an existing filter
+                SearchResultsView.View.Refresh();
             }
 
             CountFiles();
@@ -540,5 +541,97 @@ namespace CodeIDX.ViewModels
         {
             ActiveFileFilters = new ObservableCollection<string>(filetypeFilters);
         }
+
+        public double VerticalScrollPosition { get; set; }
+
+        private IEnumerable<SearchResultViewModel> LazyResults
+        {
+            get
+            {
+                return _LazyResults;
+            }
+            set
+            {
+                _LazyResults = value;
+                FirePropertyChanged("HasLazyResults");
+                FirePropertyChanged("LazyResultsCount");
+            }
+        }
+
+        public int LazyResultsCount
+        {
+            get
+            {
+                return LazyResults == null ? 0 : LazyResults.Count();
+            }
+        }
+        public bool HasLazyResults
+        {
+            get { return LazyResults != null && LazyResults.Any(); }
+        }
+
+        internal void LoadNextLazyResults()
+        {
+            if (!HasLazyResults)
+                return;
+
+            int pageSize = CodeIDXSettings.Search.PageSize;
+            AddItemsToResultsView(LazyResults.Take(pageSize), false);
+            LazyResults = LazyResults.Skip(pageSize);
+            if (!LazyResults.Any())
+                LazyResults = null;
+
+            CountFiles();
+        }
+
+        private void AddItemsToResultsView(IEnumerable<SearchResultViewModel> items, bool clearItems)
+        {
+            Dispatch(() =>
+            {
+                //filter all items for much better performance when adding items
+                var lastFilter = SearchResultsView.View.Filter;
+                SearchResultsView.View.Filter = FilterAll;
+
+                try
+                {
+                    using (SearchResultsView.DeferRefresh())
+                    {
+                        if (clearItems)
+                        {
+                            if (NewSearchResultsLoaded != null)
+                                NewSearchResultsLoaded();
+
+                            _SearchResultsInternal.Clear();
+                        }
+
+                        foreach (var item in items)
+                        {
+                            item.Parent = this;
+                            _SearchResultsInternal.Add(item);
+                        }
+                    }
+                }
+                finally
+                {
+                    SearchResultsView.View.Filter = lastFilter;
+                }
+            });
+        }
+
+        private bool FilterAll(object item)
+        {
+            return false;
+        }
+
+        internal void LoadAllLazyResults()
+        {
+            if (!HasLazyResults)
+                return;
+
+            AddItemsToResultsView(LazyResults, false);
+            LazyResults = null;
+            CountFiles();
+        }
+
     }
 }
