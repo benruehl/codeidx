@@ -1,5 +1,8 @@
 This file summarizes changes in CodeIDX releases.
 
+CodeIDX 2.4 - 2019-05
+- look and feel updated using AdonisUI
+
 CodeIDX 2.3 - 2015-06-03
 - option: paging options
 - paging: loading the first few results while searching the remaining files in the background
