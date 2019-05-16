@@ -1,6 +1,7 @@
 ﻿<Window x:Class="CodeIDX.Views.OptionsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
         xmlns:Converters="clr-namespace:CodeIDX.Views.Resources.Converters"
         xmlns:OptionViewModels="clr-namespace:CodeIDX.ViewModels.Options"
         xmlns:Settings="clr-namespace:CodeIDX.Settings"
@@ -10,19 +11,26 @@
         Height="400"
         MinWidth="350"
         MinHeight="300"
-        Background="#F0F0F0"
         ResizeMode="NoResize">
+    <Window.Style>
+        <Style TargetType="Window"
+               BasedOn="{StaticResource {x:Type Window}}"/>
+    </Window.Style>
+    
     <Window.Resources>
-        <Style TargetType="CheckBox">
+        <Style TargetType="CheckBox"
+               BasedOn="{StaticResource {x:Type CheckBox}}">
             <Setter Property="Margin" Value="0,0,0,3" />
         </Style>
-        <Style TargetType="RadioButton">
+        
+        <Style TargetType="RadioButton"
+               BasedOn="{StaticResource {x:Type RadioButton}}">
             <Setter Property="Margin" Value="0,0,0,3" />
         </Style>
 
         <!--  General Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:GeneralOptionsViewModel}">
-            <StackPanel Margin="5"
+            <StackPanel Margin="{adonisUi:Space 1}"
                         Orientation="Vertical">
                 <CheckBox Content="Start CodeIDX on system startup"
                           IsChecked="{Binding StartOnSystemStartup}" />
@@ -70,7 +78,7 @@
 
         <!--  Index Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:IndexOptionsViewModel}">
-            <StackPanel Margin="5"
+            <StackPanel Margin="{adonisUi:Space 1}"
                         Orientation="Vertical">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -92,67 +100,66 @@
 
         <!--  Search Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:SearchOptionsViewModel}">
-            <StackPanel Margin="5"
-                        Orientation="Vertical">
-                <GroupBox Margin="0,0,0,3"
-                          Header="Paging"
-                          Padding="3">
-                    <StackPanel Orientation="Vertical">
-                        <Grid Margin="0,3">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="3" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+            <ScrollViewer Padding="0"
+                          Margin="{adonisUi:Space 1}">
+                <StackPanel Orientation="Vertical">
+                    <GroupBox Margin="{adonisUi:Space 0, 0, 0, 1}"
+                              Header="Paging">
+                        <StackPanel Orientation="Vertical">
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="3" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-                            <TextBlock VerticalAlignment="Center"
-                                       Text="Min Page Size" />
-                            <tookit:IntegerUpDown Grid.Column="2"
-                                                  Width="80"
-                                                  Increment="100"
-                                                  Maximum="10000"
-                                                  Minimum="100"
-                                                  Value="{Binding PageSize}" />
-                        </Grid>
+                                <TextBlock VerticalAlignment="Center"
+                                           Text="Min Page Size" />
+                                <tookit:IntegerUpDown Grid.Column="2"
+                                                      Width="80"
+                                                      Increment="100"
+                                                      Maximum="10000"
+                                                      Minimum="100"
+                                                      Value="{Binding PageSize}" />
+                            </Grid>
 
-                        <CheckBox Content="Load all items when background search is finished"
-                                  IsChecked="{Binding LoadRemainingLazyResults}"
-                                  ToolTip="After displaying the first results, the search continues in the background." />
-                    </StackPanel>
-                </GroupBox>
+                            <CheckBox Content="Load all items when background search is finished"
+                                      IsChecked="{Binding LoadRemainingLazyResults}"
+                                      ToolTip="After displaying the first results, the search continues in the background." />
+                        </StackPanel>
+                    </GroupBox>
 
-                <GroupBox Margin="0,0,0,3"
-                          Header="New Search"
-                          Padding="3">
-                    <StackPanel Orientation="Vertical">
-                        <CheckBox Content="Enable filter"
-                                  IsChecked="{Binding EnableFilterByDefault}" />
-                        <CheckBox Content="Insert text from clipboard"
-                                  IsChecked="{Binding InsertTextFromClipBoard}" />
-                    </StackPanel>
-                </GroupBox>
+                    <GroupBox Margin="{adonisUi:Space 0, 0, 0, 1}"
+                              Header="New Search">
+                        <StackPanel Orientation="Vertical">
+                            <CheckBox Content="Enable filter"
+                                      IsChecked="{Binding EnableFilterByDefault}" />
+                            <CheckBox Content="Insert text from clipboard"
+                                      IsChecked="{Binding InsertTextFromClipBoard}" />
+                        </StackPanel>
+                    </GroupBox>
 
-                <GroupBox Margin="0,0,0,3"
-                          Header="Filter"
-                          Padding="3">
-                    <StackPanel Orientation="Vertical">
-                        <CheckBox Content="Show directory filter"
-                                  IsChecked="{Binding EnableDirectoryFilter}" />
-                        <CheckBox Content="Show file filter"
-                                  IsChecked="{Binding EnableFileFilter}" />
-                    </StackPanel>
-                </GroupBox>
+                    <GroupBox Margin="{adonisUi:Space 0, 0, 0, 1}"
+                              Header="Filter">
+                        <StackPanel Orientation="Vertical">
+                            <CheckBox Content="Show directory filter"
+                                      IsChecked="{Binding EnableDirectoryFilter}" />
+                            <CheckBox Content="Show file filter"
+                                      IsChecked="{Binding EnableFileFilter}" />
+                        </StackPanel>
+                    </GroupBox>
 
-                <CheckBox Content="Enable search history"
-                          IsChecked="{Binding EnableSearchHistory}" />
-                <CheckBox Content="Enable search in results"
-                          IsChecked="{Binding EnableSearchInResults}" />
-            </StackPanel>
+                    <CheckBox Content="Enable search history"
+                              IsChecked="{Binding EnableSearchHistory}" />
+                    <CheckBox Content="Enable search in results"
+                              IsChecked="{Binding EnableSearchInResults}" />
+                </StackPanel>
+            </ScrollViewer>
         </DataTemplate>
 
         <!--  Results Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:ResultOptionsViewModel}">
-            <StackPanel Margin="5"
+            <StackPanel Margin="{adonisUi:Space 1}"
                         Orientation="Vertical">
 
                 <CheckBox Content="Select match in preview"
@@ -163,9 +170,9 @@
                           IsChecked="{Binding FilterFileOnEnter}"
                           ToolTip="Default behavior is open file" />
 
-                <GroupBox Margin="0,0,0,3"
+                <GroupBox Margin="{adonisUi:Space 0, 1, 0, 0}"
                           Header="Default Editor"
-                          Padding="3"
+                          Padding="{adonisUi:Space 1}"
                           ToolTip="Select the default editor to use when double clicking a search result.">
                     <StackPanel>
                         <RadioButton Content="Default"
@@ -183,7 +190,7 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="3" />
+                                <ColumnDefinition Width="{adonisUi:Space 1}" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
 
@@ -203,7 +210,7 @@
 
         <!--  UserInterface Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:UIOptionsViewModel}">
-            <StackPanel Margin="5"
+            <StackPanel Margin="{adonisUi:Space 1}"
                         Orientation="Vertical">
 
                 <CheckBox Content="Show file count in results"
@@ -217,15 +224,15 @@
 
         <!--  Blacklist Template  -->
         <DataTemplate DataType="{x:Type OptionViewModels:BlacklistOptionsViewModel}">
-            <Grid Margin="5">
+            <Grid Margin="{adonisUi:Space 1}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition Width="{adonisUi:Space 1}" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="3" />
+                    <RowDefinition Height="{adonisUi:Space 1}" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -235,7 +242,8 @@
                 <ScrollViewer Grid.Row="2"
                               Grid.Column="0"
                               HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Auto">
+                              VerticalScrollBarVisibility="Auto"
+                              Padding="0">
                     <TextBox AcceptsReturn="True"
                              Text="{Binding Directories,
                                             Converter={x:Static Converters:ListToStringConverter.Instance},
@@ -249,29 +257,29 @@
                         VerticalAlignment="Top"
                         Click="AddBlacklistDirectory_Click"
                         Content="…"
-                        Padding="3,0"
                         ToolTip="Add directory" />
             </Grid>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid Margin="5">
+    <Grid Margin="{adonisUi:Space 1}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="100" />
-            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="{adonisUi:Space 2}" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
-            <RowDefinition Height="10" />
+            <RowDefinition Height="{adonisUi:Space 2}" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TreeView x:Name="OptionsTree"
                   Grid.Column="0"
-                  Background="#F5F5F5">
+                  Background="{DynamicResource {x:Static adonisUi:Brushes.Layer1BackgroundBrush}}">
             <TreeView.ItemContainerStyle>
-                <Style TargetType="TreeViewItem">
+                <Style TargetType="TreeViewItem"
+                       BasedOn="{StaticResource TreeViewItemStyle}">
                     <Setter Property="IsSelected">
                         <Setter.Value>
                             <MultiBinding Converter="{x:Static Converters:ItemTypeEqualsTypeConverter.Instance}"
@@ -308,14 +316,14 @@
         <Grid Grid.Column="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
-                <RowDefinition Height="5" />
+                <RowDefinition Height="{adonisUi:Space 1}" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <GridSplitter Grid.Row="2"
                           Height="1"
                           HorizontalAlignment="Stretch"
-                          Background="#828790" />
+                          Background="{DynamicResource {x:Static adonisUi:Brushes.Layer1BorderBrush}}"/>
         </Grid>
 
         <Grid Grid.Row="2"
@@ -324,7 +332,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="85" />
-                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="{adonisUi:Space 1}" />
                 <ColumnDefinition Width="85" />
             </Grid.ColumnDefinitions>
 
@@ -332,6 +340,7 @@
                     Click="OK_Click"
                     Content="OK"
                     IsDefault="True" />
+            
             <Button Grid.Column="3"
                     Content="Cancel"
                     IsCancel="True" />

@@ -30,6 +30,7 @@
                                DataContext="{Binding}"
                                DataContextChanged="AvalonEditor_DataContextChanged"
                                HorizontalScrollBarVisibility="Auto"
+                               Background="Transparent"
                                IsReadOnly="{Binding IsEditEnabled,
                                                     RelativeSource={RelativeSource Mode=FindAncestor,
                                                                                    AncestorType={x:Type Controls:EditableAvalonEditor}},

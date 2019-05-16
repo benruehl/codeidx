@@ -70,6 +70,12 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AdonisUI, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\AdonisUI.1.10.0\lib\net40\AdonisUI.dll</HintPath>
+    </Reference>
+    <Reference Include="AdonisUI.ClassicTheme, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\AdonisUI.ClassicTheme.1.10.0\lib\net40\AdonisUI.ClassicTheme.dll</HintPath>
+    </Reference>
     <Reference Include="Common.Logging.Core">
       <HintPath>packages\Common.Logging.Core.2.2.0\lib\net40\Common.Logging.Core.dll</HintPath>
     </Reference>

@@ -12,8 +12,9 @@
         xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         xmlns:searchServices="clr-namespace:CodeIDX.Services.Lucene"
         xmlns:toolkit="http://schemas.xceed.com/wpf/xaml/toolkit"
-        xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
+        xmlns:adonisExtensions="clr-namespace:AdonisUI.Extensions;assembly=AdonisUI"
         Width="800"
         Height="600"
         MinWidth="400"
@@ -60,11 +61,12 @@
     <Grid x:Name="rootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="{adonisUi:Space 1}" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Menu>
+        <Menu Background="Transparent">
             <MenuItem Header="File">
                 <MenuItem Command="Commands:ApplicationViewCommands.CreateIndexCommand"
                           CommandParameter="{Binding DataContext,
@@ -102,7 +104,8 @@
                         </Style>
                     </MenuItem.Style>
                     <MenuItem.Resources>
-                        <Style TargetType="{x:Type MenuItem}">
+                        <Style TargetType="{x:Type MenuItem}"
+                               BasedOn="{StaticResource {x:Type MenuItem}}">
                             <Setter Property="Header" Value="{Binding Name}" />
                             <Setter Property="ToolTip" Value="{Binding IndexFile}" />
                             <EventSetter Event="Click"
@@ -209,7 +212,7 @@
 
         <!--  Main Grid  -->
         <Grid x:Name="MainGrid"
-              Grid.Row="1">
+              Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"
                                MinHeight="100" />
@@ -225,7 +228,8 @@
                         SelectionChanged="SearchTab_SelectionChanged">
 
                 <TabControl.ItemContainerStyle>
-                    <Style TargetType="{x:Type TabItem}">
+                    <Style TargetType="{x:Type TabItem}"
+                           BasedOn="{StaticResource {x:Type TabItem}}">
                         <Setter Property="MaxWidth" Value="200" />
                         <Setter Property="ToolTip" Value="{Binding LastSearchText}" />
                         <Setter Property="ContextMenu" Value="{StaticResource SearchTabContextMenu}" />
@@ -310,7 +314,7 @@
 
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <Grid>
+                        <Grid adonisExtensions:LayerExtension.IncreaseLayer="True">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
@@ -329,34 +333,30 @@
                                 </Grid.ColumnDefinitions>
 
                                 <TextBox Grid.Column="0"
-                                         Margin="0,2,3,2"
                                          PreviewKeyDown="Search_KeyDown"
-                                         Text="{Binding SearchText,
-                                                        UpdateSourceTrigger=PropertyChanged}"
+                                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                          Visibility="{Binding EnableSearchHistory,
                                                               Source={x:Static Settings:CodeIDXSettings.Search},
                                                               Converter={x:Static Converters:BoolToVisibilityReversedConverter.Instance}}"
                                          local:MainWindow.IsSearchTextBox="True" />
 
                                 <ComboBox Grid.Column="0"
-                                          Margin="0,2,3,2"
                                           IsEditable="True"
                                           IsTextSearchEnabled="False"
                                           ItemsSource="{Binding DataContext.SearchHistory,
                                                                 RelativeSource={RelativeSource Mode=FindAncestor,
                                                                                                AncestorType={x:Type TabControl}}}"
                                           PreviewKeyDown="Search_KeyDown"
-                                          Text="{Binding SearchText,
-                                                         UpdateSourceTrigger=PropertyChanged}"
+                                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                           Visibility="{Binding EnableSearchHistory,
                                                                Source={x:Static Settings:CodeIDXSettings.Search},
                                                                Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}"
                                           local:MainWindow.IsSearchTextBox="True" />
 
                                 <Button Grid.Column="1"
+                                        Style="{StaticResource ToolbarButton}"
                                         Command="Commands:SearchViewCommands.RunSearchCommand"
-                                        CommandParameter="{Binding DataContext,
-                                                                   RelativeSource={RelativeSource Self}}"
+                                        CommandParameter="{Binding DataContext, RelativeSource={RelativeSource Self}}"
                                         ToolTip="Run search">
                                     <Button.Content>
                                         <Image Width="16"
@@ -366,7 +366,7 @@
                                 </Button>
 
                                 <ToggleButton Grid.Column="2"
-                                              Margin="3,2,5,2"
+                                              Margin="3,0,5,0"
                                               IsChecked="{Binding IsSearchingInResults}"
                                               ToolTip="Fix search result files">
                                     <ToggleButton.Style>
@@ -454,30 +454,30 @@
                                         </Grid.ColumnDefinitions>
 
                                         <!--  Directory Filter  -->
-                                        <xctk:WatermarkTextBox Width="150"
-                                                               Margin="3,2"
-                                                               Text="{Binding DirectoryFilterExpression,
-                                                                              UpdateSourceTrigger=PropertyChanged}"
-                                                               Visibility="{Binding Path=EnableDirectoryFilter,
-                                                                                    Source={x:Static Settings:CodeIDXSettings.Search},
-                                                                                    Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}"
-                                                               Watermark="Directory Filter" />
+                                        <TextBox Width="150"
+                                                 Margin="3,0"
+                                                 Text="{Binding DirectoryFilterExpression,
+                                                                 UpdateSourceTrigger=PropertyChanged}"
+                                                 Visibility="{Binding Path=EnableDirectoryFilter,
+                                                                     Source={x:Static Settings:CodeIDXSettings.Search},
+                                                                     Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}"
+                                                 adonisExtensions:WatermarkExtension.Watermark="Directory Filter" />
 
                                         <!--  File Filter  -->
-                                        <xctk:WatermarkTextBox Grid.Column="1"
-                                                               Width="150"
-                                                               Margin="3,2"
-                                                               Text="{Binding FileFilterExpression,
-                                                                              UpdateSourceTrigger=PropertyChanged}"
-                                                               Visibility="{Binding Path=EnableFileFilter,
-                                                                                    Source={x:Static Settings:CodeIDXSettings.Search},
-                                                                                    Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}"
-                                                               Watermark="File Filter" />
+                                        <TextBox Grid.Column="1"
+                                                 Width="150"
+                                                 Margin="3,0"
+                                                 Text="{Binding FileFilterExpression,
+                                                                UpdateSourceTrigger=PropertyChanged}"
+                                                 Visibility="{Binding Path=EnableFileFilter,
+                                                                      Source={x:Static Settings:CodeIDXSettings.Search},
+                                                                      Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}"
+                                                 adonisExtensions:WatermarkExtension.Watermark="File Filter" />
 
                                         <!--  Extension Filter  -->
                                         <xctk:CheckComboBox Grid.Column="2"
                                                             Width="150"
-                                                            Margin="3,2"
+                                                            Margin="3,0"
                                                             Command="local:MainWindow.ToggleFiletypeFilterCommand"
                                                             Delimiter="; "
                                                             IsEnabled="{Binding Items.Count,
@@ -491,11 +491,19 @@
                                                     <Setter Property="ToolTip" Value="CTRL to select single item&#10;CTRL + SHIFT to select all other items" />
                                                 </Style>
                                             </xctk:CheckComboBox.ItemContainerStyle>
+                                            <xctk:CheckComboBox.Resources>
+                                                <ResourceDictionary>
+                                                    <Style TargetType="TextBox"
+                                                           BasedOn="{StaticResource {x:Type TextBox}}">
+                                                        <Setter Property="Padding" Value="{adonisUi:Space 1, 0}"/>
+                                                    </Style>
+                                                </ResourceDictionary>
+                                            </xctk:CheckComboBox.Resources>
                                         </xctk:CheckComboBox>
                                     </Grid>
 
                                     <ToggleButton Grid.Column="2"
-                                                  Margin="3,2,0,2"
+                                                  Margin="3,0,0,0"
                                                   IsChecked="{Binding IsFilterEnabled}"
                                                   ToolTip="Toggle Filter">
                                         <ToggleButton.Content>
@@ -507,139 +515,158 @@
                                 </Grid>
                             </Grid>
 
+                            <GroupBox Grid.Row="1"
+                                      VerticalAlignment="Stretch"
+                                      Margin="{adonisUi:Space 0, 1, 0, 0}">
 
-                            <ListView x:Name="lvSearchResults"
-                                      Grid.Row="1"
-                                      DataContextChanged="lvSearchResults_DataContextChanged"
-                                      IsSynchronizedWithCurrentItem="True"
-                                      ItemsSource="{Binding SearchResultsView.View}"
-                                      Loaded="SearchResultsView_Loaded"
-                                      MouseMove="SearchResults_MouseMove"
-                                      PreviewKeyDown="Result_KeyDown"
-                                      PreviewMouseLeftButtonDown="SearchResults_LeftButtonDown"
-                                      ScrollViewer.ScrollChanged="SearchResults_ScrollChanged"
-                                      SelectedItem="{Binding SelectedResult,
-                                                             Mode=OneWay}"
-                                      SelectionChanged="SearchResult_SelectionChanged"
-                                      VirtualizingPanel.IsVirtualizing="True">
-                                <ListView.Resources>
-                                    <Style TargetType="{x:Type ListViewItem}">
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                        <EventSetter Event="MouseDoubleClick"
-                                                     Handler="SearchResult_DoubleClick" />
-                                        <Setter Property="ContextMenu">
-                                            <Setter.Value>
-                                                <ContextMenu>
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenLocationCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Open Folder" />
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenFileCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Open File" />
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.OpenFileInNotepadCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Open File in Notepad"
-                                                              ToolTip="Opening file in Notepad++ if installed." />
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.CopyFilepathCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Copy Full Path" />
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.RemoveFileFromResultsCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Remove File" />
-                                                    <MenuItem Command="Commands:SearchResultViewCommands.FilterFileCommand"
-                                                              CommandParameter="{Binding DataContext,
-                                                                                         RelativeSource={RelativeSource Self}}"
-                                                              Header="Filter File" />
-                                                </ContextMenu>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListView.Resources>
+                                <ListView x:Name="lvSearchResults"
+                                          DataContextChanged="lvSearchResults_DataContextChanged"
+                                          IsSynchronizedWithCurrentItem="True"
+                                          ItemsSource="{Binding SearchResultsView.View}"
+                                          Loaded="SearchResultsView_Loaded"
+                                          MouseMove="SearchResults_MouseMove"
+                                          PreviewKeyDown="Result_KeyDown"
+                                          PreviewMouseLeftButtonDown="SearchResults_LeftButtonDown"
+                                          ScrollViewer.ScrollChanged="SearchResults_ScrollChanged"
+                                          SelectedItem="{Binding SelectedResult, Mode=OneWay}"
+                                          SelectionChanged="SearchResult_SelectionChanged"
+                                          VirtualizingPanel.IsVirtualizing="True">
+                                    <ListView.Resources>
+                                        <Style TargetType="{x:Type ListViewItem}"
+                                               BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                            <EventSetter Event="MouseDoubleClick"
+                                                         Handler="SearchResult_DoubleClick" />
+                                            <Setter Property="ContextMenu">
+                                                <Setter.Value>
+                                                    <ContextMenu>
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenLocationCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Open Folder" />
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenFileCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Open File" />
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.OpenFileInNotepadCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Open File in Notepad"
+                                                                  ToolTip="Opening file in Notepad++ if installed." />
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.CopyFilepathCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Copy Full Path" />
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.RemoveFileFromResultsCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Remove File" />
+                                                        <MenuItem Command="Commands:SearchResultViewCommands.FilterFileCommand"
+                                                                  CommandParameter="{Binding DataContext,
+                                                                                             RelativeSource={RelativeSource Self}}"
+                                                                  Header="Filter File" />
+                                                    </ContextMenu>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListView.Resources>
 
-                                <ListView.View>
-                                    <GridView>
-                                        <GridViewColumn Width="300"
-                                                        Header="Directory">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock HorizontalAlignment="Right"
-                                                               Text="{Binding Directory}">
-                                                        <TextBlock.Style>
-                                                            <Style BasedOn="{StaticResource {x:Type TextBlock}}"
-                                                                   TargetType="{x:Type TextBlock}">
-                                                                <Setter Property="ToolTip">
-                                                                    <Setter.Value>
-                                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
-                                                                            <Binding Path="Directory" />
-                                                                            <Binding Source="\" />
-                                                                            <Binding Path="Filename" />
-                                                                            <Binding Path="Extension" />
-                                                                        </MultiBinding>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsFirstOfFile}"
-                                                                                 Value="False">
-                                                                        <Setter Property="Foreground" Value="Gray" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Width="200"
-                                                        Header="Filename">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding Filename}">
-                                                        <TextBlock.Style>
-                                                            <Style BasedOn="{StaticResource {x:Type TextBlock}}"
-                                                                   TargetType="{x:Type TextBlock}">
-                                                                <Setter Property="ToolTip">
-                                                                    <Setter.Value>
-                                                                        <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
-                                                                            <Binding Path="Directory" />
-                                                                            <Binding Source="\" />
-                                                                            <Binding Path="Filename" />
-                                                                            <Binding Path="Extension" />
-                                                                        </MultiBinding>
-                                                                    </Setter.Value>
-                                                                </Setter>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsFirstOfFile}"
-                                                                                 Value="False">
-                                                                        <Setter Property="Foreground" Value="Gray" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn Width="50"
-                                                        DisplayMemberBinding="{Binding Extension}"
-                                                        Header="Ext" />
-                                        <GridViewColumn Width="50"
-                                                        DisplayMemberBinding="{Binding LineNumber}"
-                                                        Header="Line" />
-                                        <GridViewColumn Header="Match">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Controls:TextBlockEx.FormattedText="{Binding Converter={x:Static Converters:HighlightedSearchResultToInlineConverter.Instance}}" />
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
+                                    <ListView.View>
+                                        <GridView>
+                                            <GridViewColumn Width="300"
+                                                            Header="Directory"
+                                                            adonisExtensions:GridViewSortExtension.PropertyName="Directory">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock HorizontalAlignment="Right"
+                                                                   Text="{Binding Directory}">
+                                                            <TextBlock.Style>
+                                                                <Style BasedOn="{StaticResource {x:Type TextBlock}}"
+                                                                       TargetType="{x:Type TextBlock}">
+                                                                    <Setter Property="ToolTip">
+                                                                        <Setter.Value>
+                                                                            <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
+                                                                                <Binding Path="Directory" />
+                                                                                <Binding Source="\" />
+                                                                                <Binding Path="Filename" />
+                                                                                <Binding Path="Extension" />
+                                                                            </MultiBinding>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsFirstOfFile}"
+                                                                                     Value="False">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static adonisUi:Brushes.DisabledForegroundBrush}}" />
+                                                                        </DataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsFirstOfFile}" Value="False"/>
+                                                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=ListViewItem}}" Value="True"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static adonisUi:Brushes.DisabledAccentForegroundBrush}}" />
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Width="200"
+                                                            Header="Filename"
+                                                            adonisExtensions:GridViewSortExtension.PropertyName="Filename">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Filename}">
+                                                            <TextBlock.Style>
+                                                                <Style BasedOn="{StaticResource {x:Type TextBlock}}"
+                                                                       TargetType="{x:Type TextBlock}">
+                                                                    <Setter Property="ToolTip">
+                                                                        <Setter.Value>
+                                                                            <MultiBinding Converter="{x:Static Converters:CombineStringsConverter.Instance}">
+                                                                                <Binding Path="Directory" />
+                                                                                <Binding Source="\" />
+                                                                                <Binding Path="Filename" />
+                                                                                <Binding Path="Extension" />
+                                                                            </MultiBinding>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsFirstOfFile}"
+                                                                                     Value="False">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static adonisUi:Brushes.DisabledForegroundBrush}}" />
+                                                                        </DataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsFirstOfFile}" Value="False"/>
+                                                                                <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=ListViewItem}}" Value="True"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Foreground" Value="{DynamicResource {x:Static adonisUi:Brushes.DisabledAccentForegroundBrush}}" />
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                            <GridViewColumn Width="50"
+                                                            DisplayMemberBinding="{Binding Extension}"
+                                                            Header="Ext" />
+                                            <GridViewColumn Width="50"
+                                                            DisplayMemberBinding="{Binding LineNumber}"
+                                                            Header="Line" />
+                                            <GridViewColumn Header="Match">
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Controls:TextBlockEx.FormattedText="{Binding Converter={x:Static Converters:HighlightedSearchResultToInlineConverter.Instance}}" />
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </GroupBox>
 
                             <!--  Load lazy results buttons  -->
                             <StackPanel Grid.Row="1"
@@ -650,8 +677,6 @@
                                         Visibility="{Binding HasLazyResults,
                                                              Converter={x:Static Converters:BoolToVisibilityConverter.Instance}}">
                                 <Button Margin="0,0,5,0"
-                                        Background="WhiteSmoke"
-                                        BorderBrush="#7FACCC"
                                         Command="Commands:SearchViewCommands.LoadAllLazyResultsCommand"
                                         CommandParameter="{Binding Path=.}"
                                         Content="Load All">
@@ -660,9 +685,7 @@
                                                  ContentStringFormat="{}Load remaining {0} results" />
                                     </Button.ToolTip>
                                 </Button>
-                                <Button Background="WhiteSmoke"
-                                        BorderBrush="#7FACCC"
-                                        Command="Commands:SearchViewCommands.LoadNextLazyResultsCommand"
+                                <Button Command="Commands:SearchViewCommands.LoadNextLazyResultsCommand"
                                         CommandParameter="{Binding Path=.}"
                                         Content="Load Next" />
                             </StackPanel>
@@ -674,28 +697,28 @@
             <GridSplitter x:Name="PreviewSplitter"
                           Grid.Row="1"
                           Height="5"
-                          Margin="0,2,0,0"
                           HorizontalAlignment="Stretch"
                           DragCompleted="PreviewSplitter_DragCompleted"
                           MouseDoubleClick="PreviewSplitter_MouseDoubleClick"
                           ResizeBehavior="PreviousAndNext"
                           ResizeDirection="Rows"
-                          Style="{StaticResource GridSplitterHorizontalGripStyle}" />
+                          Background="{DynamicResource {x:Static adonisUi:Brushes.Layer2BackgroundBrush}}"/>
 
             <Controls:EditableAvalonEditor x:Name="PreviewEditor"
                                            Grid.Row="2"
+                                           Background="{DynamicResource {x:Static adonisUi:Brushes.Layer2BackgroundBrush}}"
                                            DataContext="{Binding CurrentSearch.SelectedResult}"
                                            IsEditEnabled="{Binding DataContext.UserSettings.IsEditEnabled,
                                                                    ElementName=MainGrid}" />
         </Grid>
 
         <StatusBar x:Name="sbStatus"
-                   Grid.Row="2"
+                   Grid.Row="3"
                    Height="28"
-                   VerticalContentAlignment="Center">
+                   VerticalContentAlignment="Center"
+                   adonisExtensions:LayerExtension.Layer="3">
             <StatusBar.Style>
-                <Style TargetType="{x:Type StatusBar}">
-                    <Setter Property="Background" Value="#F1EDED" />
+                <Style TargetType="{x:Type StatusBar}" BasedOn="{StaticResource {x:Type StatusBar}}">
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsReady}"
                                      Value="False">
