@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIDX", "CodeIDX.csproj", "{49FEBFF2-FD99-49FD-AFE6-6AF3A1889E6F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIDX", "CodeIDX\CodeIDX.csproj", "{49FEBFF2-FD99-49FD-AFE6-6AF3A1889E6F}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{20CBDA33-1892-4065-A1AF-31B8C73912AC}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18173A30-A641-4BF8-9D77-8C6AFBFC384B}"
 	ProjectSection(SolutionItems) = preProject
-		ChangeLog.txt = ChangeLog.txt
-		License.txt = License.txt
-		Readme.txt = Readme.txt
+		..\ChangeLog.txt = ..\ChangeLog.txt
+		..\License.txt = ..\License.txt
+		..\Readme.txt = ..\Readme.txt
 	EndProjectSection
 EndProject
 Global
@@ -25,5 +25,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EBDCA8AE-31D5-4600-B397-5580EF39EBA9}
 	EndGlobalSection
 EndGlobal
